@@ -1,0 +1,387 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique
+  fullName     String
+  email        String?  @unique
+  passwordHash String
+  role         String   @default("CASHIER")
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sales        Sale[]
+  purchases    Purchase[]
+  adjustments  StockAdjustment[]
+  journalLines JournalLine[]
+
+  @@map("users")
+}
+
+model Brand {
+  id       Int       @id @default(autoincrement())
+  name     String    @unique
+  isActive Boolean   @default(true)
+  products Product[]
+
+  @@map("brands")
+}
+
+model Product {
+  id                  Int      @id @default(autoincrement())
+  code                String   @unique
+  name                String
+  variety             String
+  grainLength         String?
+  brandId             Int?
+  defaultUnit         String   @default("KG")
+  salePrice           Decimal  @default(0) @db.Decimal(12, 2)
+  purchasePrice       Decimal  @default(0) @db.Decimal(12, 2)
+  lowStockThresholdKg Decimal  @default(200) @db.Decimal(12, 3)
+  isActive            Boolean  @default(true)
+  notes               String?  @db.Text
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  brand          Brand?            @relation(fields: [brandId], references: [id])
+  stockMovements StockMovement[]
+  saleItems      SaleItem[]
+  purchaseItems  PurchaseItem[]
+  adjustments    StockAdjustment[]
+
+  @@map("products")
+}
+
+model StockMovement {
+  id            Int      @id @default(autoincrement())
+  productId     Int
+  type          String
+  quantityKg    Decimal  @db.Decimal(12, 3)
+  displayUnit   String   @default("KG")
+  displayQty    Decimal  @db.Decimal(12, 3)
+  unitCostKg    Decimal? @db.Decimal(12, 2)
+  referenceId   Int?
+  referenceType String?
+  notes         String?
+  movedAt       DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([productId])
+  @@index([movedAt])
+  @@map("stock_movements")
+}
+
+model StockAdjustment {
+  id          Int      @id @default(autoincrement())
+  productId   Int
+  userId      Int
+  type        String
+  quantityKg  Decimal  @db.Decimal(12, 3)
+  displayUnit String
+  displayQty  Decimal  @db.Decimal(12, 3)
+  reason      String
+  adjustedAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([productId])
+  @@map("stock_adjustments")
+}
+
+model Supplier {
+  id             Int      @id @default(autoincrement())
+  code           String   @unique
+  name           String
+  phone          String?
+  address        String?  @db.Text
+  city           String?
+  creditTermDays Int      @default(0)
+  creditLimit    Decimal  @default(0) @db.Decimal(12, 2)
+  openingBalance Decimal  @default(0) @db.Decimal(12, 2)
+  notes          String?  @db.Text
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  purchases     Purchase[]
+  ledgerEntries PartyLedgerEntry[]
+
+  @@map("suppliers")
+}
+
+model Customer {
+  id             Int      @id @default(autoincrement())
+  code           String   @unique
+  name           String
+  phone          String?
+  address        String?  @db.Text
+  city           String?
+  creditLimit    Decimal  @default(0) @db.Decimal(12, 2)
+  openingBalance Decimal  @default(0) @db.Decimal(12, 2)
+  notes          String?  @db.Text
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  sales         Sale[]
+  ledgerEntries PartyLedgerEntry[]
+
+  @@map("customers")
+}
+
+model Purchase {
+  id              Int      @id @default(autoincrement())
+  invoiceNo       String   @unique
+  internalRef     String   @unique
+  supplierId      Int
+  userId          Int
+  purchaseDate    DateTime @default(now())
+  status          String   @default("RECEIVED")
+  subtotal        Decimal  @db.Decimal(14, 2)
+  discount        Decimal  @default(0) @db.Decimal(14, 2)
+  totalAmount     Decimal  @db.Decimal(14, 2)
+  paidAmount      Decimal  @default(0) @db.Decimal(14, 2)
+  balanceDue      Decimal  @db.Decimal(14, 2)
+  moisturePercent Decimal? @db.Decimal(5, 2)
+  qualityGrade    String?
+  qualityNotes    String?  @db.Text
+  vehicleNo       String?
+  driverName      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  supplier       Supplier          @relation(fields: [supplierId], references: [id])
+  user           User              @relation(fields: [userId], references: [id])
+  items          PurchaseItem[]
+  payments       PurchasePayment[]
+  ledgerEntries  PartyLedgerEntry[]
+  journalEntries JournalEntry[]
+
+  @@index([supplierId])
+  @@index([purchaseDate])
+  @@map("purchases")
+}
+
+model PurchaseItem {
+  id          Int      @id @default(autoincrement())
+  purchaseId  Int
+  productId   Int
+  quantityKg  Decimal  @db.Decimal(12, 3)
+  displayUnit String
+  displayQty  Decimal  @db.Decimal(12, 3)
+  unitCostKg  Decimal  @db.Decimal(12, 2)
+  totalCost   Decimal  @db.Decimal(14, 2)
+  bagWeight   Decimal? @db.Decimal(12, 3)
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([purchaseId])
+  @@index([productId])
+  @@map("purchase_items")
+}
+
+model PurchasePayment {
+  id         Int      @id @default(autoincrement())
+  purchaseId Int
+  amount     Decimal  @db.Decimal(14, 2)
+  method     String
+  reference  String?
+  paidAt     DateTime @default(now())
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseId])
+  @@map("purchase_payments")
+}
+
+model Sale {
+  id             Int      @id @default(autoincrement())
+  invoiceNo      String   @unique
+  customerId     Int?
+  userId         Int
+  saleDate       DateTime @default(now())
+  status         String   @default("COMPLETED")
+  subtotal       Decimal  @db.Decimal(14, 2)
+  discountAmount Decimal  @default(0) @db.Decimal(14, 2)
+  totalAmount    Decimal  @db.Decimal(14, 2)
+  paidAmount     Decimal  @default(0) @db.Decimal(14, 2)
+  creditAmount   Decimal  @default(0) @db.Decimal(14, 2)
+  changeAmount   Decimal  @default(0) @db.Decimal(14, 2)
+  paymentMethod  String
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  customer       Customer?         @relation(fields: [customerId], references: [id])
+  user           User              @relation(fields: [userId], references: [id])
+  items          SaleItem[]
+  journalEntries JournalEntry[]
+  ledgerEntries  PartyLedgerEntry[]
+
+  @@index([customerId])
+  @@index([saleDate])
+  @@map("sales")
+}
+
+model SaleItem {
+  id          Int     @id @default(autoincrement())
+  saleId      Int
+  productId   Int
+  quantityKg  Decimal @db.Decimal(12, 3)
+  displayUnit String
+  displayQty  Decimal @db.Decimal(12, 3)
+  unitPriceKg Decimal @db.Decimal(12, 2)
+  discount    Decimal @default(0) @db.Decimal(5, 2)
+  totalAmount Decimal @db.Decimal(14, 2)
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([saleId])
+  @@index([productId])
+  @@map("sale_items")
+}
+
+model Account {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  type      String
+  parentId  Int?
+  isSystem  Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  parent   Account?      @relation("AccountHierarchy", fields: [parentId], references: [id])
+  children Account[]     @relation("AccountHierarchy")
+  lines    JournalLine[]
+
+  @@map("accounts")
+}
+
+model JournalEntry {
+  id            Int      @id @default(autoincrement())
+  entryNo       String   @unique
+  description   String
+  entryDate     DateTime @default(now())
+  referenceType String?
+  referenceId   Int?
+  saleId        Int?
+  purchaseId    Int?
+  isReversed    Boolean  @default(false)
+  reversedById  Int?
+  createdAt     DateTime @default(now())
+  createdById   Int?
+
+  lines    JournalLine[]
+  sale     Sale?         @relation(fields: [saleId], references: [id])
+  purchase Purchase?     @relation(fields: [purchaseId], references: [id])
+
+  @@index([entryDate])
+  @@index([referenceType, referenceId])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id             Int      @id @default(autoincrement())
+  journalEntryId Int
+  accountId      Int
+  type           String
+  amount         Decimal  @db.Decimal(14, 2)
+  description    String?
+  userId         Int?
+  createdAt      DateTime @default(now())
+
+  journalEntry JournalEntry @relation(fields: [journalEntryId], references: [id], onDelete: Cascade)
+  account      Account      @relation(fields: [accountId], references: [id])
+  user         User?        @relation(fields: [userId], references: [id])
+
+  @@index([journalEntryId])
+  @@index([accountId])
+  @@map("journal_lines")
+}
+
+model PartyLedgerEntry {
+  id             Int      @id @default(autoincrement())
+  customerId     Int?
+  supplierId     Int?
+  type           String
+  amount         Decimal  @db.Decimal(14, 2)
+  description    String
+  entryDate      DateTime @default(now())
+  referenceType  String
+  referenceId    Int?
+  saleId         Int?
+  purchaseId     Int?
+  runningBalance Decimal  @db.Decimal(14, 2)
+  createdAt      DateTime @default(now())
+
+  customer Customer? @relation(fields: [customerId], references: [id])
+  supplier Supplier? @relation(fields: [supplierId], references: [id])
+  sale     Sale?     @relation(fields: [saleId], references: [id])
+  purchase Purchase? @relation(fields: [purchaseId], references: [id])
+
+  @@index([customerId])
+  @@index([supplierId])
+  @@index([entryDate])
+  @@map("party_ledger_entries")
+}
+
+model ExpenseCategory {
+  id        Int     @id @default(autoincrement())
+  name      String  @unique
+  accountId Int?
+  isActive  Boolean @default(true)
+
+  expenses Expense[]
+
+  @@map("expense_categories")
+}
+
+model Expense {
+  id            Int      @id @default(autoincrement())
+  categoryId    Int
+  amount        Decimal  @db.Decimal(14, 2)
+  description   String?
+  expenseDate   DateTime @default(now())
+  paymentMethod String   @default("CASH")
+  reference     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  category ExpenseCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
+  @@index([expenseDate])
+  @@map("expenses")
+}
+
+model BusinessSettings {
+  id                Int      @id @default(1)
+  businessName      String   @default("Rice Traders")
+  address           String?  @db.Text
+  phone             String?
+  ntnNumber         String?
+  currency          String   @default("PKR")
+  invoicePrefix     String   @default("INV")
+  purchasePrefix    String   @default("PUR")
+  lowStockDefaultKg Decimal  @default(200) @db.Decimal(12, 3)
+  updatedAt         DateTime @updatedAt
+
+  @@map("business_settings")
+}

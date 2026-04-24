@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "additionalDirectories": [
+      "d:\\pos\\src\\app\\(dashboard)\\products",
+      "d:\\pos\\src\\app\\api\\auth"
+    ]
+  }
+}

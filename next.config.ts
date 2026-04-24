@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  serverExternalPackages: ["@prisma/client", "prisma"],
+  // Prevent static generation of pages that use database
+  output: "standalone",
 };
 
 export default nextConfig;
