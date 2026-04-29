@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { UNIT_OPTIONS, Unit, toKg } from "@/lib/units";
+import { errorMessageFromFetchResponse } from "@/lib/httpErrorMessage";
 import { formatCurrency } from "@/lib/utils";
 
 interface Supplier { id: number; name: string; }
@@ -54,25 +55,44 @@ export function PurchaseForm({ suppliers, products }: { suppliers: Supplier[]; p
   async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault();
     setError("");
+    const supplierId = Number(form.supplierId);
+    const lineItems = items.filter((i) => i.productId > 0);
+    if (!form.supplierId || Number.isNaN(supplierId) || supplierId < 1) {
+      setError("Please select a supplier.");
+      return;
+    }
+    if (lineItems.length === 0) {
+      setError("Add at least one product line.");
+      return;
+    }
+
     setSaving(true);
 
-    const res = await fetch("/api/purchases", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...form,
-        supplierId: Number(form.supplierId),
-        discount: Number(form.discount),
-        paidAmount: Number(form.paidAmount),
-        items: items.filter((i) => i.productId > 0),
-      }),
-    });
+    try {
+      const res = await fetch("/api/purchases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...form,
+          supplierId,
+          discount: Number(form.discount),
+          paidAmount: form.paymentMethod === "CREDIT" ? 0 : Number(form.paidAmount),
+          items: lineItems,
+        }),
+      });
 
-    setSaving(false);
-    if (res.ok) router.push("/purchases");
-    else {
-      const err = await res.json();
-      setError(JSON.stringify(err.error ?? "Failed"));
+      // Do not use `res.json()` — error responses may have an empty body (crashes on JSON parse).
+      if (res.ok) {
+        router.push("/purchases");
+        return;
+      }
+
+      const message = await errorMessageFromFetchResponse(res);
+      setError(message);
+    } catch {
+      setError("Network error — try again.");
+    } finally {
+      setSaving(false);
     }
   }
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
+import { BRAND_DISPLAY_NAME } from "@/config/branding";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -124,7 +125,7 @@ export default function LoginPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-600">
-          AMB Super Foods &copy; {new Date().getFullYear()} &middot; All rights reserved
+          {BRAND_DISPLAY_NAME} &copy; {new Date().getFullYear()} &middot; All rights reserved
         </p>
       </div>
     </div>

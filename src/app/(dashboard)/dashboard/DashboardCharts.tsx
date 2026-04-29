@@ -19,7 +19,7 @@ export function DashboardCharts({ salesChart }: Props) {
             <XAxis dataKey="date" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
             <Tooltip formatter={(value) => formatCurrency(Number(value ?? 0))} />
-            <Bar dataKey="sales" fill="#2563eb" radius={[4, 4, 0, 0]} name="Sales" />
+            <Bar dataKey="sales" fill="#2563eb" radius={[0, 0, 0, 0]} name="Sales" />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>

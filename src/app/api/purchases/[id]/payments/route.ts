@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { postJournalEntry, getSystemAccounts, updatePartyLedger } from "@/lib/double-entry";
+import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 
 const PaymentSchema = z.object({
   amount: z.number().min(0.01),
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
 
     return payment;
-  });
+  }, interactiveTransactionOptions);
 
   return NextResponse.json(result, { status: 201 });
 }

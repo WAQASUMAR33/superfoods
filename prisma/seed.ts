@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { BRAND_DISPLAY_NAME, DEFAULT_BUSINESS_CONTACT } from "../src/config/branding";
 
 const prisma = new PrismaClient();
 
@@ -22,7 +23,10 @@ async function main() {
     update: {},
     create: {
       id: 1,
-      businessName: "Rice Traders",
+      businessName: BRAND_DISPLAY_NAME,
+      address: DEFAULT_BUSINESS_CONTACT.address,
+      phone: DEFAULT_BUSINESS_CONTACT.phone,
+      ntnNumber: DEFAULT_BUSINESS_CONTACT.ntnNumber,
       currency: "PKR",
       invoicePrefix: "INV",
       purchasePrefix: "PUR",

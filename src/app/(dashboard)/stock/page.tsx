@@ -1,14 +1,55 @@
 export const dynamic = "force-dynamic";
+
+import { Suspense } from "react";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Container from "@mui/material/Container";
+import Paper from "@mui/material/Paper";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
+import Tooltip from "@mui/material/Tooltip";
+import PackageIcon from "@mui/icons-material/Inventory2";
+import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import DangerousOutlinedIcon from "@mui/icons-material/DangerousOutlined";
+
 import { Header } from "@/components/layout/Header";
+import { UrlSyncedFilters } from "@/components/mui/UrlSyncedFilters";
 import { prisma } from "@/lib/prisma";
 import { getStockLevels, getStockStatus } from "@/lib/inventory";
 import { formatNumber } from "@/lib/utils";
-import { Package, AlertTriangle, CheckCircle, XCircle } from "lucide-react";
 
-export default async function StockPage() {
+export default async function StockPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; brandId?: string; status?: string }>;
+}) {
+  const params = await searchParams;
+  const q = params.q?.trim();
+  const brandId = params.brandId ? Number(params.brandId) : undefined;
+  const statusFilter = params.status?.trim() ?? "";
+
   const [products, brands] = await Promise.all([
     prisma.product.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(q
+          ? {
+              OR: [
+                { name: { contains: q } },
+                { code: { contains: q } },
+                { variety: { contains: q } },
+              ],
+            }
+          : {}),
+        ...(brandId && !Number.isNaN(brandId) ? { brandId } : {}),
+      },
       include: { brand: true },
       orderBy: { name: "asc" },
     }),
@@ -17,12 +58,21 @@ export default async function StockPage() {
 
   const stockLevels = await getStockLevels(prisma);
 
-  const rows = products.map((p) => {
+  let rows = products.map((p) => {
     const stockKg = stockLevels[p.id] ?? 0;
     const threshold = Number(p.lowStockThresholdKg);
     const status = getStockStatus(stockKg, threshold);
     return { ...p, stockKg, threshold, status };
   });
+
+  if (statusFilter) {
+    rows = rows.filter((r) => {
+      if (statusFilter === "ok") return r.status === "ok";
+      if (statusFilter === "low") return r.status === "low";
+      if (statusFilter === "critical") return r.status === "critical";
+      return true;
+    });
+  }
 
   const summary = {
     total: rows.length,
@@ -31,93 +81,163 @@ export default async function StockPage() {
     critical: rows.filter((r) => r.status === "critical").length,
   };
 
+  const brandOptions = brands.map((b) => ({ value: String(b.id), label: b.name }));
+
+  const cardItems = [
+    { label: "Total (filtered)", value: summary.total, icon: PackageIcon, tone: "#0099D6" },
+    { label: "In Stock", value: summary.ok, icon: CheckCircleIcon, tone: "#16a34a" },
+    { label: "Low Stock", value: summary.low, icon: WarningAmberIcon, tone: "#d97706" },
+    { label: "Out of Stock", value: summary.critical, icon: DangerousOutlinedIcon, tone: "#dc2626" },
+  ];
+
+  const statusBadge = (s: "ok" | "low" | "critical") => {
+    if (s === "ok")
+      return (
+        <Tooltip title="Above threshold">
+          <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: "success.main", fontWeight: 600 }}>
+            <CheckCircleIcon sx={{ fontSize: 18 }} /> OK
+          </Box>
+        </Tooltip>
+      );
+    if (s === "low")
+      return (
+        <Tooltip title="At or below reorder level">
+          <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: "warning.main", fontWeight: 600 }}>
+            <WarningAmberIcon sx={{ fontSize: 18 }} /> Low
+          </Box>
+        </Tooltip>
+      );
+    return (
+      <Tooltip title="Zero or negative on hand">
+        <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: "error.main", fontWeight: 600 }}>
+          <DangerousOutlinedIcon sx={{ fontSize: 18 }} /> Out
+        </Box>
+      </Tooltip>
+    );
+  };
+
   return (
-    <div className="flex flex-col overflow-hidden">
+    <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0, flex: 1 }}>
       <Header title="Stock Levels" />
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+      <Box sx={{ flex: 1, overflow: "auto", py: { xs: 2, sm: 3 } }}>
+        <Container maxWidth="xl">
+          <Box
+            sx={{
+              mb: 3,
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr 1fr", sm: "repeat(4, 1fr)" },
+              gap: 2,
+            }}
+          >
+            {cardItems.map(({ label, value, icon: Icon, tone }) => (
+              <Card key={label} elevation={1}>
+                <CardContent sx={{ display: "flex", alignItems: "center", gap: 2, py: 2.25 }}>
+                  <Box
+                    sx={{
+                      p: 1.25,
+                      bgcolor: `${tone}14`,
+                      color: tone,
+                      display: "flex",
+                    }}
+                  >
+                    <Icon fontSize="small" />
+                  </Box>
+                  <Box>
+                    <Typography variant="h5" component="div" sx={{ fontWeight: 800 }}>
+                      {value}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {label}
+                    </Typography>
+                  </Box>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
 
-        {/* Summary cards */}
-        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {[
-            { label: "Total Products", value: summary.total, icon: Package, color: "text-[#0099D6]", bg: "bg-[#0099D6]/10" },
-            { label: "In Stock", value: summary.ok, icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-50" },
-            { label: "Low Stock", value: summary.low, icon: AlertTriangle, color: "text-amber-600", bg: "bg-amber-50" },
-            { label: "Out of Stock", value: summary.critical, icon: XCircle, color: "text-red-600", bg: "bg-red-50" },
-          ].map((s) => {
-            const Icon = s.icon;
-            return (
-              <div key={s.label} className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-4 shadow-sm">
-                <div className={`rounded-xl p-2.5 ${s.bg}`}>
-                  <Icon className={`h-5 w-5 ${s.color}`} />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-slate-800">{s.value}</p>
-                  <p className="text-xs text-slate-400">{s.label}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+          <Suspense fallback={<Box sx={{ height: 96, mb: 2 }} />}>
+            <UrlSyncedFilters
+              fields={[
+                { key: "q", type: "text", label: "Search", placeholder: "Product name or code…" },
+                {
+                  key: "brandId",
+                  type: "select",
+                  label: "Brand",
+                  emptyLabel: "All brands",
+                  options: brandOptions,
+                },
+                {
+                  key: "status",
+                  type: "select",
+                  label: "Status",
+                  emptyLabel: "All",
+                  options: [
+                    { value: "ok", label: "In stock" },
+                    { value: "low", label: "Low" },
+                    { value: "critical", label: "Out of stock" },
+                  ],
+                },
+              ]}
+            />
+          </Suspense>
 
-        {/* Table */}
-        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-5 py-4">
-            <h2 className="text-sm font-semibold text-slate-800">All Products</h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100 bg-slate-50/60">
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Product</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Brand</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Stock (Kg)</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Threshold (Kg)</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {rows.map((row) => (
-                  <tr key={row.id} className="transition hover:bg-slate-50/80">
-                    <td className="px-5 py-3.5">
-                      <p className="font-medium text-slate-800">{row.name}</p>
-                      <p className="text-xs text-slate-400 font-mono">{row.code}</p>
-                    </td>
-                    <td className="px-5 py-3.5 text-slate-500">{row.brand?.name ?? "—"}</td>
-                    <td className="px-5 py-3.5 text-right font-semibold text-slate-800">
-                      {formatNumber(row.stockKg, 1)}
-                    </td>
-                    <td className="px-5 py-3.5 text-right text-slate-500">
-                      {formatNumber(row.threshold, 0)}
-                    </td>
-                    <td className="px-5 py-3.5 text-center">
-                      {row.status === "ok" && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-semibold text-emerald-700">
-                          <CheckCircle className="h-3 w-3" /> OK
-                        </span>
-                      )}
-                      {row.status === "low" && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-700">
-                          <AlertTriangle className="h-3 w-3" /> Low
-                        </span>
-                      )}
-                      {row.status === "critical" && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
-                          <XCircle className="h-3 w-3" /> Out
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {rows.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="py-12 text-center text-slate-400">No products found</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </div>
+          <Paper sx={{ overflow: "hidden", boxShadow: 1 }}>
+            <Box sx={{ px: 2, py: 1.75, borderBottom: 1, borderColor: "divider" }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                All Products
+              </Typography>
+            </Box>
+            <TableContainer>
+              <Table size="small" sx={{ "& .MuiTableCell-root": { py: 1.75 } }}>
+                <TableHead sx={{ "& th": { fontWeight: 700, bgcolor: "action.hover", color: "text.secondary", fontSize: 11 } }}>
+                  <TableRow>
+                    <TableCell>Product</TableCell>
+                    <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Brand</TableCell>
+                    <TableCell align="right">Stock (Kg)</TableCell>
+                    <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} align="right">
+                      Threshold (Kg)
+                    </TableCell>
+                    <TableCell align="center">Status</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {rows.map((row) => (
+                    <TableRow key={row.id} hover>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {row.name}
+                        </Typography>
+                        <Typography variant="caption" sx={{ fontFamily: "monospace" }} color="text.secondary">
+                          {row.code}
+                        </Typography>
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} color="text.secondary">
+                        {row.brand?.name ?? "—"}
+                      </TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 700 }}>
+                        {formatNumber(row.stockKg, 1)}
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} align="right" color="text.secondary">
+                        {formatNumber(row.threshold, 0)}
+                      </TableCell>
+                      <TableCell align="center">{statusBadge(row.status)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {rows.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5}>
+                        <Typography sx={{ py: 6, textAlign: "center", color: "text.secondary" }}>
+                          No rows match your filters.
+                        </Typography>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Paper>
+        </Container>
+      </Box>
+    </Box>
   );
 }

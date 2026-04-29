@@ -7,6 +7,7 @@ import { PurchaseSchema } from "@/types";
 import { toKg, Unit } from "@/lib/units";
 import { recordStockMovement } from "@/lib/inventory";
 import { postJournalEntry, getSystemAccounts, updatePartyLedger } from "@/lib/double-entry";
+import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -32,12 +33,19 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const userId = Number((session.user as { id: string }).id);
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
   const parsed = PurchaseSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const data = parsed.data;
 
+  try {
   const result = await prisma.$transaction(async (tx) => {
     const count = await tx.purchase.count();
     const internalRef = `PUR-${new Date().getFullYear()}-${String(count + 1).padStart(5, "0")}`;
@@ -144,7 +152,17 @@ export async function POST(req: NextRequest) {
     }
 
     return purchase;
-  });
+  }, interactiveTransactionOptions);
 
   return NextResponse.json(result, { status: 201 });
+  } catch (e) {
+    const message =
+      e instanceof Error
+        ? e.message
+        : typeof e === "object" && e !== null && "message" in e
+          ? String((e as { message: unknown }).message)
+          : "Could not save purchase";
+    console.error("[POST /api/purchases]", e);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }

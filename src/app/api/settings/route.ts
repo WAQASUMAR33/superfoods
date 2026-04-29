@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { BRAND_DISPLAY_NAME } from "@/config/branding";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -25,7 +26,7 @@ export async function GET() {
     update: {},
     create: {
       id: 1,
-      businessName: "AMB Super Foods",
+      businessName: BRAND_DISPLAY_NAME,
       currency: "PKR",
       invoicePrefix: "INV",
       purchasePrefix: "PUR",

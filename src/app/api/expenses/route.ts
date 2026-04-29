@@ -5,6 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ExpenseSchema } from "@/types";
 import { postJournalEntry, getSystemAccounts } from "@/lib/double-entry";
+import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     });
 
     return expense;
-  });
+  }, interactiveTransactionOptions);
 
   return NextResponse.json(result, { status: 201 });
 }

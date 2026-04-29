@@ -1,6 +1,6 @@
 import { useReducer } from "react";
 import { CartState, CartAction, CartItem } from "@/types";
-import { toKg, fromKg, Unit } from "@/lib/units";
+import { toKg, fromKg } from "@/lib/units";
 
 const initialState: CartState = {
   items: [],

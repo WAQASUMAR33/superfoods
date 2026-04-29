@@ -27,7 +27,7 @@ interface ReceiptSale {
 
 export function SaleReceipt({ sale }: { sale: ReceiptSale }) {
   return (
-    <div className="mx-auto max-w-sm bg-white p-6 font-mono text-sm print:shadow-none shadow-md rounded">
+    <div className="mx-auto max-w-sm bg-white p-6 font-mono text-sm print:shadow-none shadow-md">
       <div className="text-center mb-4">
         <h1 className="text-lg font-bold">RICE POS</h1>
         <p className="text-xs text-gray-500">Sales Invoice</p>

@@ -373,7 +373,7 @@ model Expense {
 
 model BusinessSettings {
   id                Int      @id @default(1)
-  businessName      String   @default("Rice Traders")
+  businessName      String   @default("LASANI FOODS DI MUMTAZ UMAIR")
   address           String?  @db.Text
   phone             String?
   ntnNumber         String?

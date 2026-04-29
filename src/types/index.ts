@@ -30,7 +30,7 @@ export const PurchaseItemSchema = z.object({
 
 export const PurchaseSchema = z.object({
   invoiceNo: z.string().min(1),
-  supplierId: z.number(),
+  supplierId: z.number().int().positive(),
   purchaseDate: z.string(),
   items: z.array(PurchaseItemSchema).min(1),
   discount: z.number().min(0).default(0),

@@ -25,7 +25,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <Header title={`Edit: ${product.name}`} />
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <div className="mx-auto max-w-2xl">
-          <ProductForm brands={brands} product={product} />
+          <ProductForm key={product.id} brands={brands} product={product} />
         </div>
 
         <div className="mx-auto max-w-2xl">

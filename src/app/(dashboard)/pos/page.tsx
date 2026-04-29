@@ -18,17 +18,29 @@ export default async function POSPage() {
 
   const stockLevels = await getStockLevels(prisma);
 
-  const productsWithStock = products.map((p) => ({
-    ...p,
+  /** Plain JSON only — Prisma Decimals cannot be passed to Client Components */
+  const productsPlain = products.map((p) => ({
+    id: p.id,
+    code: p.code,
+    name: p.name,
+    variety: p.variety,
+    defaultUnit: p.defaultUnit,
     salePrice: Number(p.salePrice),
-    purchasePrice: Number(p.purchasePrice),
-    lowStockThresholdKg: Number(p.lowStockThresholdKg),
     stockKg: stockLevels[p.id] ?? 0,
+    lowStockThresholdKg: Number(p.lowStockThresholdKg),
+    brand: p.brand ? { name: p.brand.name } : null,
+  }));
+
+  const customersPlain = customers.map((c) => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone ?? null,
+    creditLimit: Number(c.creditLimit),
   }));
 
   return (
     <div className="flex h-full overflow-hidden">
-      <POSTerminal products={productsWithStock} customers={customers} />
+      <POSTerminal products={productsPlain} customers={customersPlain} />
     </div>
   );
 }

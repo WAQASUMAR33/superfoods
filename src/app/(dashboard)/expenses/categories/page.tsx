@@ -23,7 +23,16 @@ export default function ExpenseCategoriesPage() {
     if (res.ok) setCategories(await res.json());
   }
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const res = await fetch("/api/expenses/categories");
+      if (!cancelled && res.ok) setCategories(await res.json());
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function handleAdd(e: { preventDefault(): void }) {
     e.preventDefault();

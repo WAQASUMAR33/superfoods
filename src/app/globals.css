@@ -1,8 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #111111;
+  /* M3 Color Tokens — AMB Brand */
+  --md-primary: #0099D6;
+  --md-on-primary: #ffffff;
+  --md-primary-container: #C2E8F7;
+  --md-on-primary-container: #001F29;
+
+  --md-surface: #FAFCFF;
+  --md-surface-container-low: #F4F8FC;
+  --md-surface-container: #EEF2F6;
+  --md-surface-container-high: #E8ECF0;
+  --md-on-surface: #191C1E;
+  --md-on-surface-variant: #41484D;
+
+  --md-outline: #71787E;
+  --md-outline-variant: #C1C7CD;
+
+  --background: #F4F8FC;
+  --foreground: #191C1E;
 }
 
 @theme inline {
@@ -16,4 +32,29 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+
+/* Square UI: neutralize Tailwind rounding utilities */
+@layer utilities {
+  .rounded-sm,
+  .rounded,
+  .rounded-md,
+  .rounded-lg,
+  .rounded-xl,
+  .rounded-2xl,
+  .rounded-3xl,
+  .rounded-full {
+    border-radius: 0 !important;
+  }
+}
+
+/* M3 state layer */
+.md-state-hover { @apply transition-colors duration-150; }
+
+/* M3 chip */
+.chip-success { @apply inline-flex items-center bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20; }
+.chip-warning  { @apply inline-flex items-center bg-amber-50  px-3 py-1 text-xs font-medium text-amber-700  ring-1 ring-inset ring-amber-600/20;  }
+.chip-error    { @apply inline-flex items-center bg-red-50    px-3 py-1 text-xs font-medium text-red-700    ring-1 ring-inset ring-red-600/20;    }
+.chip-neutral  { @apply inline-flex items-center bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-400/20;  }
+.chip-blue     { @apply inline-flex items-center bg-blue-50   px-3 py-1 text-xs font-medium text-blue-700   ring-1 ring-inset ring-blue-600/20;   }

@@ -2,20 +2,25 @@ export const dynamic = "force-dynamic";
 import { Header } from "@/components/layout/Header";
 import { prisma } from "@/lib/prisma";
 import { PurchaseForm } from "@/components/purchases/PurchaseForm";
-import { getStockLevels } from "@/lib/inventory";
 
 export default async function NewPurchasePage() {
   const [suppliers, products] = await Promise.all([
     prisma.supplier.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
     prisma.product.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
   ]);
-  const stockLevels = await getStockLevels(prisma);
+  /** Plain objects only — Prisma Decimals cannot cross the server/client boundary */
+  const suppliersPlain = suppliers.map((s) => ({
+    id: s.id,
+    name: s.name,
+  }));
 
-  const productsWithStock = products.map((p) => ({
-    ...p,
-    salePrice: Number(p.salePrice),
+  const productsPlain = products.map((p) => ({
+    id: p.id,
+    code: p.code,
+    name: p.name,
+    variety: p.variety,
     purchasePrice: Number(p.purchasePrice),
-    stockKg: stockLevels[p.id] ?? 0,
+    defaultUnit: p.defaultUnit,
   }));
 
   return (
@@ -23,7 +28,7 @@ export default async function NewPurchasePage() {
       <Header title="New Purchase" />
       <div className="flex-1 overflow-y-auto p-6">
         <div className="mx-auto max-w-4xl">
-          <PurchaseForm suppliers={suppliers} products={productsWithStock} />
+          <PurchaseForm suppliers={suppliersPlain} products={productsPlain} />
         </div>
       </div>
     </div>

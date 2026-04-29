@@ -1,80 +1,199 @@
 export const dynamic = "force-dynamic";
+
+import { Suspense } from "react";
+import Link from "next/link";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Container from "@mui/material/Container";
+import Paper from "@mui/material/Paper";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
+import EditIcon from "@mui/icons-material/Edit";
+import AddIcon from "@mui/icons-material/Add";
+
 import { Header } from "@/components/layout/Header";
+import { UrlSyncedFilters } from "@/components/mui/UrlSyncedFilters";
 import { prisma } from "@/lib/prisma";
 import { getStockLevels } from "@/lib/inventory";
 import { formatCurrency, formatNumber } from "@/lib/utils";
-import Link from "next/link";
-import { Plus, Edit } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 
-export default async function ProductsPage() {
-  const [products, stockLevels] = await Promise.all([
+export default async function ProductsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; brandId?: string; stock?: string }>;
+}) {
+  const params = await searchParams;
+  const q = params.q?.trim();
+  const brandId = params.brandId ? Number(params.brandId) : undefined;
+  const stockFilter = params.stock?.trim() ?? "";
+
+  const [brands, products, stockLevels] = await Promise.all([
+    prisma.brand.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
     prisma.product.findMany({
-      where: { isActive: true },
+      where: {
+        isActive: true,
+        ...(q
+          ? {
+              OR: [
+                { name: { contains: q } },
+                { code: { contains: q } },
+                { variety: { contains: q } },
+              ],
+            }
+          : {}),
+        ...(brandId && !Number.isNaN(brandId) ? { brandId } : {}),
+      },
       include: { brand: true },
       orderBy: [{ variety: "asc" }, { name: "asc" }],
     }),
     getStockLevels(prisma),
   ]);
 
+  const rows = products
+    .map((p) => {
+      const stock = stockLevels[p.id] ?? 0;
+      const threshold = Number(p.lowStockThresholdKg);
+      const statusVariant = stock <= 0 ? "critical" : stock <= threshold ? "low" : "ok";
+      const statusLabel = stock <= 0 ? "Out of Stock" : stock <= threshold ? "Low Stock" : "In Stock";
+      return { p, stock, threshold, statusVariant, statusLabel };
+    })
+    .filter((r) => {
+      if (!stockFilter) return true;
+      if (stockFilter === "ok") return r.statusVariant === "ok";
+      if (stockFilter === "low") return r.statusVariant === "low";
+      if (stockFilter === "out") return r.statusVariant === "critical";
+      return true;
+    });
+
+  const brandOptions = brands.map((b) => ({ value: String(b.id), label: b.name }));
+
   return (
-    <div className="flex flex-col overflow-hidden">
+    <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0, flex: 1 }}>
       <Header title="Products" />
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm text-gray-500">{products.length} active products</p>
-          <Link
-            href="/products/new"
-            className="flex items-center gap-1.5 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+      <Box sx={{ flex: 1, overflow: "auto", py: { xs: 2, sm: 3 } }}>
+        <Container maxWidth="xl">
+          <Box
+            sx={{
+              mb: 2,
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 2,
+            }}
           >
-            <Plus className="h-4 w-4" /> Add Product
-          </Link>
-        </div>
+            <Typography variant="body2" color="text.secondary">
+              {rows.length} product{rows.length === 1 ? "" : "s"} (filtered)
+            </Typography>
+            <Link href="/products/new" prefetch style={{ textDecoration: "none" }}>
+              <Button variant="contained" startIcon={<AddIcon />}>
+                Add Product
+              </Button>
+            </Link>
+          </Box>
 
-        <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Code</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Name</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Variety</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Brand</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Sale Price/Kg</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Stock (Kg)</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {products.map((p) => {
-                const stock = stockLevels[p.id] ?? 0;
-                const threshold = Number(p.lowStockThresholdKg);
-                const statusVariant = stock <= 0 ? "destructive" : stock <= threshold ? "warning" : "success";
-                const statusLabel = stock <= 0 ? "Out of Stock" : stock <= threshold ? "Low Stock" : "In Stock";
+          <Suspense fallback={<Box sx={{ height: 96, mb: 2 }} />}>
+            <UrlSyncedFilters
+              fields={[
+                { key: "q", type: "text", label: "Search", placeholder: "Name, code, variety" },
+                {
+                  key: "brandId",
+                  type: "select",
+                  label: "Brand",
+                  emptyLabel: "All brands",
+                  options: brandOptions,
+                },
+                {
+                  key: "stock",
+                  type: "select",
+                  label: "Stock level",
+                  emptyLabel: "All",
+                  options: [
+                    { value: "ok", label: "In stock" },
+                    { value: "low", label: "Low stock" },
+                    { value: "out", label: "Out of stock" },
+                  ],
+                },
+              ]}
+            />
+          </Suspense>
 
-                return (
-                  <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500">{p.code}</td>
-                    <td className="px-4 py-3 font-medium text-gray-900">{p.name}</td>
-                    <td className="px-4 py-3 text-gray-600">{p.variety}</td>
-                    <td className="px-4 py-3 text-gray-500">{p.brand?.name ?? "-"}</td>
-                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(p.salePrice)}</td>
-                    <td className="px-4 py-3 text-right font-medium">{formatNumber(stock, 2)}</td>
-                    <td className="px-4 py-3">
-                      <Badge variant={statusVariant as "destructive" | "warning" | "success"}>{statusLabel}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link href={`/products/${p.id}`} className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-blue-600 hover:bg-blue-50">
-                        <Edit className="h-3 w-3" /> Edit
+          <TableContainer component={Paper} sx={{ boxShadow: 1 }}>
+            <Table size="small" sx={{ "& .MuiTableCell-root": { py: 1.5 } }}>
+              <TableHead sx={{ "& th": { fontWeight: 600, bgcolor: "action.hover", color: "text.secondary", fontSize: 11 } }}>
+                <TableRow>
+                  <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Code</TableCell>
+                  <TableCell>Name</TableCell>
+                  <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Variety</TableCell>
+                  <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>Brand</TableCell>
+                  <TableCell align="right">Sale / Kg</TableCell>
+                  <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} align="right">
+                    Stock (Kg)
+                  </TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="right" width={96} />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {rows.map(({ p, stock, statusLabel, statusVariant }) => (
+                  <TableRow key={p.id} hover>
+                    <TableCell sx={{ display: { xs: "none", sm: "table-cell" }, fontFamily: "monospace", fontSize: 12 }} color="text.secondary">
+                      {p.code}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {p.name}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>{p.variety}</TableCell>
+                    <TableCell sx={{ display: { xs: "none", md: "table-cell" } }} color="text.secondary">
+                      {p.brand?.name ?? "—"}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>
+                      {formatCurrency(p.salePrice)}
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} align="right">
+                      {formatNumber(stock, 2)}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        size="small"
+                        label={statusLabel}
+                        color={
+                          statusVariant === "critical" ? "error" : statusVariant === "low" ? "warning" : "success"
+                        }
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Link href={`/products/${p.id}`} prefetch style={{ textDecoration: "none" }}>
+                        <Button size="small" startIcon={<EditIcon sx={{ fontSize: 18 }} />}>
+                          Edit
+                        </Button>
                       </Link>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {rows.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8}>
+                      <Typography sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
+                        No products match your filters.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Container>
+      </Box>
+    </Box>
   );
 }

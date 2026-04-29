@@ -7,6 +7,7 @@ import { SaleSchema } from "@/types";
 import { toKg, Unit } from "@/lib/units";
 import { recordStockMovement, getStockLevel } from "@/lib/inventory";
 import { postJournalEntry, getSystemAccounts, updatePartyLedger } from "@/lib/double-entry";
+import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -136,7 +137,7 @@ export async function POST(req: NextRequest) {
     }
 
     return sale;
-  });
+  }, interactiveTransactionOptions);
 
   return NextResponse.json(result, { status: 201 });
 }

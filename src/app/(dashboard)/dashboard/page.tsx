@@ -1,14 +1,49 @@
 export const dynamic = "force-dynamic";
+
+import { Suspense } from "react";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import Chip from "@mui/material/Chip";
+import Container from "@mui/material/Container";
+import Paper from "@mui/material/Paper";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
+import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import LocalShippingIcon from "@mui/icons-material/LocalShipping";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import InsightsIcon from "@mui/icons-material/Insights";
+
 import { Header } from "@/components/layout/Header";
+import { UrlSyncedFilters } from "@/components/mui/UrlSyncedFilters";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
 import { getStockLevels } from "@/lib/inventory";
 import { DashboardCharts } from "./DashboardCharts";
-import { ShoppingCart, Truck, AlertTriangle, TrendingUp } from "lucide-react";
 
-async function getDashboardData() {
+const SALE_STATUSES = ["COMPLETED", "CREDIT", "PARTIALLY_PAID", "RETURNED"] as const;
+
+async function getDashboardData(recent?: { q?: string; status?: string }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const qRe = recent?.q?.trim();
+  const saleStatus =
+    recent?.status?.trim() && SALE_STATUSES.includes(recent.status as (typeof SALE_STATUSES)[number])
+      ? recent.status
+      : undefined;
+
+  const recentWhere = {
+    ...(saleStatus ? { status: saleStatus } : {}),
+    ...(qRe
+      ? {
+          OR: [{ invoiceNo: { contains: qRe } }, { customer: { name: { contains: qRe } } }],
+        }
+      : {}),
+  };
 
   const [salesToday, purchasesToday, products, lowStockProducts, recentSales] = await Promise.all([
     prisma.sale.aggregate({ where: { saleDate: { gte: today } }, _sum: { totalAmount: true }, _count: true }),
@@ -17,15 +52,14 @@ async function getDashboardData() {
     prisma.product.findMany({ where: { isActive: true } }),
     prisma.sale.findMany({
       take: 8,
+      where: recentWhere,
       orderBy: { saleDate: "desc" },
       include: { customer: true, items: true },
     }),
   ]);
 
   const stockLevels = await getStockLevels(prisma);
-  const lowStockCount = lowStockProducts.filter(
-    (p) => (stockLevels[p.id] ?? 0) <= Number(p.lowStockThresholdKg)
-  ).length;
+  const lowStockCount = lowStockProducts.filter((p) => (stockLevels[p.id] ?? 0) <= Number(p.lowStockThresholdKg)).length;
 
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -59,162 +93,196 @@ async function getDashboardData() {
   };
 }
 
-const kpiConfig = [
-  {
-    label: "Sales Today",
-    icon: ShoppingCart,
-    gradient: "from-blue-500 to-blue-600",
-    iconBg: "bg-blue-400/20",
-    shadow: "shadow-blue-500/20",
-  },
-  {
-    label: "Purchases Today",
-    icon: Truck,
-    gradient: "from-violet-500 to-violet-600",
-    iconBg: "bg-violet-400/20",
-    shadow: "shadow-violet-500/20",
-  },
-  {
-    label: "Low Stock Alerts",
-    icon: AlertTriangle,
-    gradient: "from-rose-500 to-rose-600",
-    iconBg: "bg-rose-400/20",
-    shadow: "shadow-rose-500/20",
-  },
-  {
-    label: "Total Products",
-    icon: TrendingUp,
-    gradient: "from-emerald-500 to-emerald-600",
-    iconBg: "bg-emerald-400/20",
-    shadow: "shadow-emerald-500/20",
-  },
+const KPI_GRADS = [
+  "linear-gradient(135deg,#3b82f6 0%,#2563eb 100%)",
+  "linear-gradient(135deg,#8b5cf6 0%,#7c3aed 100%)",
+  "linear-gradient(135deg,#f43f5e 0%,#e11d48 100%)",
+  "linear-gradient(135deg,#10b981 0%,#059669 100%)",
 ];
 
-export default async function DashboardPage() {
-  const data = await getDashboardData();
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ recentQ?: string; recentStatus?: string }>;
+}) {
+  const sp = await searchParams;
+  const data = await getDashboardData({
+    q: sp.recentQ,
+    status: sp.recentStatus,
+  });
 
   const kpis = [
     {
-      ...kpiConfig[0],
+      label: "Sales Today",
       value: formatCurrency(data.salesToday.amount),
       sub: `${data.salesToday.count} transactions`,
+      Icon: ShoppingCartIcon,
+      grad: KPI_GRADS[0],
     },
     {
-      ...kpiConfig[1],
+      label: "Purchases Today",
       value: formatCurrency(data.purchasesToday.amount),
       sub: `${data.purchasesToday.count} purchase orders`,
+      Icon: LocalShippingIcon,
+      grad: KPI_GRADS[1],
     },
     {
-      ...kpiConfig[2],
+      label: "Low Stock Alerts",
       value: String(data.lowStockCount),
       sub: "products below threshold",
+      Icon: WarningAmberIcon,
+      grad: KPI_GRADS[2],
     },
     {
-      ...kpiConfig[3],
+      label: "Total Products",
       value: String(data.totalProducts),
       sub: "active products",
+      Icon: InsightsIcon,
+      grad: KPI_GRADS[3],
     },
   ];
 
+  const chipColor = (s: string) => {
+    if (s === "COMPLETED") return "success" as const;
+    if (s === "CREDIT") return "warning" as const;
+    return "default" as const;
+  };
+
   return (
-    <div className="flex flex-col overflow-hidden">
+    <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0, flex: 1 }}>
       <Header title="Dashboard" />
 
-      <div className="flex-1 space-y-6 overflow-y-auto p-4 sm:p-6">
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {kpis.map((kpi) => {
-            const Icon = kpi.icon;
-            return (
-              <div
+      <Box sx={{ flex: 1, overflow: "auto", py: { xs: 2, sm: 3 } }}>
+        <Container maxWidth="xl" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", xl: "repeat(4, 1fr)" },
+              gap: 2,
+            }}
+          >
+            {kpis.map((kpi) => {
+              const Icon = kpi.Icon;
+              return (
+              <Card
                 key={kpi.label}
-                className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${kpi.gradient} p-5 text-white shadow-lg ${kpi.shadow}`}
+                elevation={6}
+                sx={{
+                  color: "#fff",
+                  background: kpi.grad,
+                  position: "relative",
+                  overflow: "hidden",
+                }}
               >
-                {/* Background decoration */}
-                <div className="pointer-events-none absolute -right-4 -top-4 h-24 w-24 rounded-full bg-white/10" />
-                <div className="pointer-events-none absolute -bottom-6 -right-2 h-20 w-20 rounded-full bg-white/5" />
+                <Box sx={{ position: "absolute", right: -12, top: -12, width: 88, height: 88, bgcolor: "rgba(255,255,255,.1)" }} />
+                <Box sx={{ p: 2.75, position: "relative" }}>
+                  <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                    <Box>
+                      <Typography variant="caption" component="div" sx={{ opacity: 0.85, fontWeight: 600 }}>
+                        {kpi.label}
+                      </Typography>
+                      <Typography variant="h5" sx={{ mt: 1, fontWeight: 800 }}>
+                        {kpi.value}
+                      </Typography>
+                      <Typography variant="caption" sx={{ mt: 0.5, display: "block", opacity: 0.72 }}>
+                        {kpi.sub}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ bgcolor: "rgba(255,255,255,.2)", p: 1 }}>
+                      <Icon sx={{ fontSize: 26 }} />
+                    </Box>
+                  </Box>
+                </Box>
+              </Card>
+              );
+            })}
+          </Box>
 
-                <div className="relative flex items-start justify-between">
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-white/70">
-                      {kpi.label}
-                    </p>
-                    <p className="mt-2 text-2xl font-bold leading-none">{kpi.value}</p>
-                    <p className="mt-1.5 text-xs text-white/60">{kpi.sub}</p>
-                  </div>
-                  <div className={`rounded-xl ${kpi.iconBg} p-2.5`}>
-                    <Icon className="h-5 w-5 text-white" />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+          <DashboardCharts salesChart={data.salesChart} />
 
-        {/* Charts */}
-        <DashboardCharts salesChart={data.salesChart} />
+          <Paper sx={{ overflow: "hidden", boxShadow: 1 }}>
+            <Box sx={{ px: 2, py: 1.75, borderBottom: 1, borderColor: "divider", display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                Recent Sales
+              </Typography>
+            </Box>
 
-        {/* Recent Sales */}
-        <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-5 py-4">
-            <h2 className="text-sm font-semibold text-slate-800">Recent Sales</h2>
-          </div>
+            <Suspense fallback={<Box sx={{ height: 72, px: 2, py: 2 }} />}>
+              <Box sx={{ px: 2, pt: 2, pb: 0 }}>
+                <UrlSyncedFilters
+                  resetKeys={["recentQ", "recentStatus"]}
+                  fields={[
+                    {
+                      key: "recentQ",
+                      type: "text",
+                      label: "Invoice / customer",
+                      placeholder: "Search…",
+                    },
+                    {
+                      key: "recentStatus",
+                      type: "select",
+                      label: "Status",
+                      emptyLabel: "Any status",
+                      options: SALE_STATUSES.map((s) => ({
+                        value: s,
+                        label: s.replace(/_/g, " "),
+                      })),
+                    },
+                  ]}
+                />
+              </Box>
+            </Suspense>
 
-          {data.recentSales.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-400">
-              <ShoppingCart className="mb-2 h-8 w-8 opacity-40" />
-              <p className="text-sm">No sales yet</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50/60">
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Invoice</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Customer</th>
-                    <th className="hidden px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400 sm:table-cell">Items</th>
-                    <th className="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-400">Amount</th>
-                    <th className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-400">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-50">
-                  {data.recentSales.map((sale) => (
-                    <tr key={sale.id} className="transition hover:bg-slate-50/80">
-                      <td className="px-5 py-3.5 font-mono text-xs font-medium text-indigo-600">
-                        {sale.invoiceNo}
-                      </td>
-                      <td className="px-5 py-3.5 text-slate-700">
-                        {sale.customer?.name ?? (
-                          <span className="text-slate-400 italic">Walk-in</span>
-                        )}
-                      </td>
-                      <td className="hidden px-5 py-3.5 text-slate-500 sm:table-cell">
-                        {sale.items.length} item{sale.items.length !== 1 ? "s" : ""}
-                      </td>
-                      <td className="px-5 py-3.5 text-right font-semibold text-slate-800">
-                        {formatCurrency(sale.totalAmount)}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                            sale.status === "COMPLETED"
-                              ? "bg-emerald-100 text-emerald-700"
-                              : sale.status === "CREDIT"
-                              ? "bg-amber-100 text-amber-700"
-                              : "bg-slate-100 text-slate-600"
-                          }`}
-                        >
-                          {sale.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
+            {data.recentSales.length === 0 ? (
+              <Box sx={{ py: 8, textAlign: "center", color: "text.secondary" }}>
+                <ShoppingCartIcon sx={{ fontSize: 40, opacity: 0.35, mb: 1 }} />
+                <Typography variant="body2">No matching recent sales.</Typography>
+              </Box>
+            ) : (
+              <Box sx={{ overflowX: "auto", px: 0 }}>
+                <Table size="small" sx={{ minWidth: 520 }}>
+                  <TableHead sx={{ "& th": { fontWeight: 700, bgcolor: "action.hover", color: "text.secondary", fontSize: 11 } }}>
+                    <TableRow>
+                      <TableCell>Invoice</TableCell>
+                      <TableCell>Customer</TableCell>
+                      <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Items</TableCell>
+                      <TableCell align="right">Amount</TableCell>
+                      <TableCell>Status</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {data.recentSales.map((sale) => (
+                      <TableRow key={sale.id} hover>
+                        <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }} color="primary">
+                          {sale.invoiceNo}
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {sale.customer?.name ?? (
+                              <Box component="em" sx={{ color: "text.secondary" }}>
+                                Walk-in
+                              </Box>
+                            )}
+                          </Typography>
+                        </TableCell>
+                        <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>
+                          {sale.items.length}
+                        </TableCell>
+                        <TableCell align="right" sx={{ fontWeight: 700 }}>
+                          {formatCurrency(sale.totalAmount)}
+                        </TableCell>
+                        <TableCell>
+                          <Chip size="small" label={sale.status} color={chipColor(sale.status)} variant="outlined" />
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </Box>
+            )}
+          </Paper>
+        </Container>
+      </Box>
+    </Box>
   );
 }

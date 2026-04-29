@@ -1,70 +1,168 @@
 export const dynamic = "force-dynamic";
+
+import { Suspense } from "react";
+import Link from "next/link";
+import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Container from "@mui/material/Container";
+import Paper from "@mui/material/Paper";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableHead from "@mui/material/TableHead";
+import TableRow from "@mui/material/TableRow";
+import Typography from "@mui/material/Typography";
+import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
+
 import { Header } from "@/components/layout/Header";
+import { UrlSyncedFilters } from "@/components/mui/UrlSyncedFilters";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
-import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
-import { ShoppingCart } from "lucide-react";
 
-export default async function SalesPage() {
+const SALE_STATUSES = ["COMPLETED", "CREDIT", "PARTIALLY_PAID", "RETURNED"] as const;
+
+export default async function SalesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>;
+}) {
+  const params = await searchParams;
+  const q = params.q?.trim();
+  const status = params.status?.trim();
+
+  const where = {
+    ...(q
+      ? {
+          OR: [
+            { invoiceNo: { contains: q } },
+            { customer: { name: { contains: q } } },
+          ],
+        }
+      : {}),
+    ...(status && SALE_STATUSES.includes(status as (typeof SALE_STATUSES)[number]) ? { status } : {}),
+  };
+
   const sales = await prisma.sale.findMany({
+    where,
     orderBy: { saleDate: "desc" },
-    take: 50,
+    take: 100,
     include: { customer: true, user: true, _count: { select: { items: true } } },
   });
 
-  const statusVariant: Record<string, "success" | "warning" | "destructive" | "default"> = {
-    COMPLETED: "success",
-    CREDIT: "warning",
-    PARTIALLY_PAID: "default",
-    RETURNED: "destructive",
+  const statusColor = (s: string) => {
+    if (s === "COMPLETED") return "success" as const;
+    if (s === "CREDIT") return "warning" as const;
+    if (s === "RETURNED") return "error" as const;
+    return "default" as const;
   };
 
   return (
-    <div className="flex flex-col overflow-hidden">
+    <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0, flex: 1 }}>
       <Header title="Sales History" />
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <p className="text-sm text-gray-500">{sales.length} sales</p>
-          <Link href="/pos" className="flex items-center gap-1.5 rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-            <ShoppingCart className="h-4 w-4" /> New Sale (POS)
+      <Box sx={{ flex: 1, overflow: "auto", py: { xs: 2, sm: 3 } }}>
+        <Container maxWidth="xl">
+          <Box
+            sx={{
+              mb: 2,
+              display: "flex",
+              flexWrap: "wrap",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 2,
+            }}
+          >
+            <Typography variant="body2" color="text.secondary">
+              {sales.length} sales
+            </Typography>
+          <Link href="/pos" prefetch style={{ textDecoration: "none" }}>
+            <Button variant="contained" color="success" startIcon={<PointOfSaleIcon />}>
+              New Sale (POS)
+            </Button>
           </Link>
-        </div>
-        <div className="rounded-lg border bg-white shadow-sm overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Invoice</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Customer</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Date & Time</th>
-                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Items</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Total</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Paid</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {sales.map((s) => (
-                <tr key={s.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-blue-600">{s.invoiceNo}</td>
-                  <td className="px-4 py-3 font-medium text-gray-900">{s.customer?.name ?? "Walk-in"}</td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{formatDateTime(s.saleDate)}</td>
-                  <td className="px-4 py-3 text-center text-gray-500">{s._count.items}</td>
-                  <td className="px-4 py-3 text-right font-medium">{formatCurrency(s.totalAmount)}</td>
-                  <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(s.paidAmount)}</td>
-                  <td className="px-4 py-3">
-                    <Badge variant={statusVariant[s.status]}>{s.status}</Badge>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link href={`/sales/${s.id}`} className="text-xs text-blue-600 hover:underline">View</Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
+          </Box>
+
+          <Suspense fallback={<Box sx={{ height: 96, mb: 2 }} />}>
+            <UrlSyncedFilters
+              fields={[
+                { key: "q", type: "text", label: "Search", placeholder: "Invoice or customer" },
+                {
+                  key: "status",
+                  type: "select",
+                  label: "Status",
+                  emptyLabel: "All statuses",
+                  options: SALE_STATUSES.map((s) => ({ value: s, label: s.replace(/_/g, " ") })),
+                },
+              ]}
+            />
+          </Suspense>
+
+          <TableContainer component={Paper} sx={{ boxShadow: 1 }}>
+            <Table size="small" sx={{ "& .MuiTableCell-root": { py: 1.5 } }}>
+              <TableHead sx={{ "& th": { fontWeight: 600, bgcolor: "action.hover", color: "text.secondary", fontSize: 11 } }}>
+                <TableRow>
+                  <TableCell>Invoice</TableCell>
+                  <TableCell>Customer</TableCell>
+                  <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Date &amp; time</TableCell>
+                  <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} align="center">
+                    Items
+                  </TableCell>
+                  <TableCell align="right">Total</TableCell>
+                  <TableCell sx={{ display: { xs: "none", md: "table-cell" } }} align="right">
+                    Paid
+                  </TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell align="right" width={80} />
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {sales.map((s) => (
+                  <TableRow key={s.id} hover>
+                    <TableCell sx={{ fontFamily: "monospace", fontSize: 12 }} color="primary">
+                      {s.invoiceNo}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                        {s.customer?.name ?? "Walk-in"}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: "none", sm: "table-cell" }, fontSize: 12 }} color="text.secondary">
+                      {formatDateTime(s.saleDate)}
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} align="center">
+                      {s._count.items}
+                    </TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>
+                      {formatCurrency(s.totalAmount)}
+                    </TableCell>
+                    <TableCell sx={{ display: { xs: "none", md: "table-cell" } }} align="right" color="text.secondary">
+                      {formatCurrency(s.paidAmount)}
+                    </TableCell>
+                    <TableCell>
+                      <Chip size="small" label={s.status} color={statusColor(s.status)} variant="outlined" />
+                    </TableCell>
+                    <TableCell align="right">
+                      <Link href={`/sales/${s.id}`} prefetch style={{ textDecoration: "none" }}>
+                        <Button size="small">View</Button>
+                      </Link>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {sales.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={8}>
+                      <Typography sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
+                        No sales match your filters.
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Container>
+      </Box>
+    </Box>
   );
 }

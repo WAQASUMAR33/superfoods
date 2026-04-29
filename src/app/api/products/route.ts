@@ -36,10 +36,36 @@ export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
   const parsed = ProductSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const product = await prisma.product.create({ data: parsed.data });
-  return NextResponse.json(product, { status: 201 });
+  const d = parsed.data;
+  try {
+    const product = await prisma.product.create({
+      data: {
+        code: d.code,
+        name: d.name,
+        variety: d.variety,
+        grainLength: d.grainLength?.trim() ? d.grainLength.trim() : null,
+        brandId: d.brandId ?? null,
+        defaultUnit: d.defaultUnit,
+        salePrice: d.salePrice,
+        purchasePrice: d.purchasePrice,
+        lowStockThresholdKg: d.lowStockThresholdKg,
+        notes: d.notes?.trim() ? d.notes : null,
+      },
+    });
+    return NextResponse.json(product, { status: 201 });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Could not create product";
+    console.error("[POST /api/products]", e);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

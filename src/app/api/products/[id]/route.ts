@@ -30,12 +30,39 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
   const parsed = ProductSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const product = await prisma.product.update({ where: { id: Number(id) }, data: parsed.data });
-  return NextResponse.json(product);
+  const d = parsed.data;
+  try {
+    const product = await prisma.product.update({
+      where: { id: Number(id) },
+      data: {
+        code: d.code,
+        name: d.name,
+        variety: d.variety,
+        grainLength: d.grainLength?.trim() ? d.grainLength.trim() : null,
+        brandId: d.brandId ?? null,
+        defaultUnit: d.defaultUnit,
+        salePrice: d.salePrice,
+        purchasePrice: d.purchasePrice,
+        lowStockThresholdKg: d.lowStockThresholdKg,
+        notes: d.notes?.trim() ? d.notes : null,
+      },
+    });
+    return NextResponse.json(product);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Could not update product";
+    console.error("[PUT /api/products/:id]", e);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
