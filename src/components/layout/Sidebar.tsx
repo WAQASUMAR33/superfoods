@@ -5,9 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Truck, BarChart3,
-  DollarSign, Receipt, Wallet, Settings, LogOut, Wheat, TrendingUp, X, Tag,
+  DollarSign, Receipt, Wallet, Settings, LogOut, Wheat, TrendingUp, X, Tag, UserRoundCog,
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { useSidebar } from "./SidebarContext";
 
@@ -15,7 +15,7 @@ type NavItem =
   | { divider: true; label: string }
   | { divider?: false; label: string; href: string; icon: React.ComponentType<{ className?: string }> };
 
-const nav: NavItem[] = [
+const NAV_BASE: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "POS", href: "/pos", icon: ShoppingCart },
   { divider: true, label: "Inventory" },
@@ -36,8 +36,16 @@ const nav: NavItem[] = [
   { label: "P&L", href: "/reports/profit-loss", icon: TrendingUp },
 ];
 
+const ADMIN_NAV_TAIL: NavItem[] = [
+  { divider: true, label: "Administration" },
+  { label: "Users", href: "/users", icon: UserRoundCog },
+];
+
 function SidebarInner({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const sessionRole = (session?.user as { role?: string })?.role;
+  const nav = sessionRole === "ADMIN" ? [...NAV_BASE, ...ADMIN_NAV_TAIL] : NAV_BASE;
 
   return (
     <aside className="flex h-full w-64 flex-col bg-[#020d1f] text-white">

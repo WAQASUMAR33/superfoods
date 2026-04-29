@@ -2,12 +2,10 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { BRAND_DISPLAY_NAME } from "@/config/branding";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -18,17 +16,34 @@ export default function LoginPage() {
     setLoading(true);
     const form = new FormData(e.currentTarget);
 
-    const res = await signIn("credentials", {
-      username: form.get("username"),
-      password: form.get("password"),
-      redirect: false,
-    });
+    // Absolute URL so NextAuth’s client can parse `data.url` (relative URLs throw in `new URL(data.url)`).
+    // Full page navigation ensures the session cookie is sent on the next request (SPA push can race in prod).
+    const callbackUrl =
+      typeof window !== "undefined" ? new URL("/dashboard", window.location.origin).href : "/dashboard";
 
-    setLoading(false);
-    if (res?.ok) {
-      router.push("/dashboard");
-    } else {
-      setError("Invalid username or password");
+    try {
+      const res = await signIn("credentials", {
+        username: form.get("username"),
+        password: form.get("password"),
+        redirect: false,
+        callbackUrl,
+      });
+
+      setLoading(false);
+      if (res?.ok) {
+        window.location.assign(callbackUrl);
+        return;
+      }
+      if (res?.error === "CredentialsSignin") {
+        setError("Invalid username or password");
+      } else if (res?.error) {
+        setError("Sign-in failed. Please try again.");
+      } else {
+        setError("Invalid username or password");
+      }
+    } catch {
+      setLoading(false);
+      setError("Sign-in could not complete. Refresh the page or try again.");
     }
   }
 
