@@ -1,14 +1,48 @@
 "use client";
 
-import { useState } from "react";
-import { signIn } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { getSession, signIn } from "next-auth/react";
 import { Loader2, Eye, EyeOff } from "lucide-react";
 import { BRAND_DISPLAY_NAME } from "@/config/branding";
+
+/** Callback after sign-in: same origin only; respects `?callbackUrl=` (e.g. middleware redirect). */
+function getPostLoginRedirectUrl(): string {
+  if (typeof window === "undefined") return "/dashboard";
+  const origin = window.location.origin;
+  const raw = new URLSearchParams(window.location.search).get("callbackUrl");
+  if (!raw) return `${origin}/dashboard`;
+  try {
+    const target = /^https?:\/\//i.test(raw) ? raw : new URL(raw.startsWith("/") ? raw : `/${raw}`, origin).href;
+    const u = new URL(target);
+    if (u.origin !== origin) return `${origin}/dashboard`;
+    return u.href;
+  } catch {
+    return `${origin}/dashboard`;
+  }
+}
 
 export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Show errors when NextAuth redirects back (e.g. wrong password with redirect: true).
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get("error");
+      if (!code) return;
+      if (code === "CredentialsSignin") setError("Invalid username or password");
+      else if (code === "AccessDenied") setError("Account is inactive or access was denied.");
+      else if (code === "SessionRequired") setError("Your session expired. Sign in again.");
+      else setError("Unable to sign in. Try again.");
+      params.delete("error");
+      const qs = params.toString();
+      window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   async function handleSubmit(e: { preventDefault(): void; currentTarget: HTMLFormElement }) {
     e.preventDefault();
@@ -16,34 +50,38 @@ export default function LoginPage() {
     setLoading(true);
     const form = new FormData(e.currentTarget);
 
-    // Absolute URL so NextAuth’s client can parse `data.url` (relative URLs throw in `new URL(data.url)`).
-    // Full page navigation ensures the session cookie is sent on the next request (SPA push can race in prod).
-    const callbackUrl =
-      typeof window !== "undefined" ? new URL("/dashboard", window.location.origin).href : "/dashboard";
+    const username = String(form.get("username") ?? "").trim();
+    const password = String(form.get("password") ?? "");
+    const callbackUrl = getPostLoginRedirectUrl();
 
     try {
-      const res = await signIn("credentials", {
-        username: form.get("username"),
-        password: form.get("password"),
-        redirect: false,
+      // Full-page redirect on success — most reliable on Vercel (avoids credentials + redirect:false client bugs).
+      await signIn("credentials", {
+        username,
+        password,
+        redirect: true,
         callbackUrl,
       });
 
-      setLoading(false);
-      if (res?.ok) {
-        window.location.assign(callbackUrl);
+      // Rare: promise resolved but browser did not navigate — force home if session exists.
+      const session = await getSession();
+      if (session?.user) {
+        window.location.replace(callbackUrl);
         return;
       }
-      if (res?.error === "CredentialsSignin") {
-        setError("Invalid username or password");
-      } else if (res?.error) {
-        setError("Sign-in failed. Please try again.");
-      } else {
-        setError("Invalid username or password");
-      }
-    } catch {
       setLoading(false);
-      setError("Sign-in could not complete. Refresh the page or try again.");
+    } catch {
+      try {
+        const session = await getSession();
+        if (session?.user) {
+          window.location.replace(callbackUrl);
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
+      setError("Sign-in could not complete. Check your connection and try again.");
+      setLoading(false);
     }
   }
 
