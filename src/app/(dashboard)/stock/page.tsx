@@ -23,6 +23,7 @@ import { Header } from "@/components/layout/Header";
 import { UrlSyncedFilters } from "@/components/mui/UrlSyncedFilters";
 import { prisma } from "@/lib/prisma";
 import { getStockLevels, getStockStatus } from "@/lib/inventory";
+import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 import { formatNumber } from "@/lib/utils";
 
 export default async function StockPage({
@@ -35,28 +36,31 @@ export default async function StockPage({
   const brandId = params.brandId ? Number(params.brandId) : undefined;
   const statusFilter = params.status?.trim() ?? "";
 
-  const [products, brands] = await Promise.all([
-    prisma.product.findMany({
-      where: {
-        isActive: true,
-        ...(q
-          ? {
-              OR: [
-                { name: { contains: q } },
-                { code: { contains: q } },
-                { variety: { contains: q } },
-              ],
-            }
-          : {}),
-        ...(brandId && !Number.isNaN(brandId) ? { brandId } : {}),
-      },
-      include: { brand: true },
-      orderBy: { name: "asc" },
-    }),
-    prisma.brand.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
-  ]);
-
-  const stockLevels = await getStockLevels(prisma);
+  const { products, brands, stockLevels } = await prisma.$transaction(
+    async (tx) => {
+      const brands = await tx.brand.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+      const products = await tx.product.findMany({
+        where: {
+          isActive: true,
+          ...(q
+            ? {
+                OR: [
+                  { name: { contains: q } },
+                  { code: { contains: q } },
+                  { variety: { contains: q } },
+                ],
+              }
+            : {}),
+          ...(brandId && !Number.isNaN(brandId) ? { brandId } : {}),
+        },
+        include: { brand: true },
+        orderBy: { name: "asc" },
+      });
+      const stockLevels = await getStockLevels(tx);
+      return { products, brands, stockLevels };
+    },
+    interactiveTransactionOptions
+  );
 
   let rows = products.map((p) => {
     const stockKg = stockLevels[p.id] ?? 0;

@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 
+/** If you see pool timeouts (P2024), raise `connection_limit` / `pool_timeout` on DATABASE_URL or reduce parallel Prisma calls. */
+
 declare global {
   var _prisma: PrismaClient | undefined;
 }

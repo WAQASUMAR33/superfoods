@@ -3,22 +3,30 @@ import { Header } from "@/components/layout/Header";
 import { prisma } from "@/lib/prisma";
 import { ProductForm } from "@/components/products/ProductForm";
 import { getStockLevel } from "@/lib/inventory";
+import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 import { formatNumber, formatDateTime } from "@/lib/utils";
 import { notFound } from "next/navigation";
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [product, brands] = await Promise.all([
-    prisma.product.findUnique({
-      where: { id: Number(id) },
-      include: { brand: true, stockMovements: { orderBy: { movedAt: "desc" }, take: 30 } },
-    }),
-    prisma.brand.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
-  ]);
+  const productId = Number(id);
+  const { product, brands, stockKg } = await prisma.$transaction(
+    async (tx) => {
+      const product = await tx.product.findUnique({
+        where: { id: productId },
+        include: { brand: true, stockMovements: { orderBy: { movedAt: "desc" }, take: 30 } },
+      });
+      const brands = await tx.brand.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+      if (!product) {
+        return { product: null, brands, stockKg: 0 };
+      }
+      const stockKg = await getStockLevel(tx, product.id);
+      return { product, brands, stockKg };
+    },
+    interactiveTransactionOptions
+  );
 
   if (!product) notFound();
-
-  const stockKg = await getStockLevel(prisma, product.id);
 
   return (
     <div className="flex flex-col overflow-hidden">

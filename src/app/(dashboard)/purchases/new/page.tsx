@@ -1,13 +1,24 @@
 export const dynamic = "force-dynamic";
 import { Header } from "@/components/layout/Header";
 import { prisma } from "@/lib/prisma";
+import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 import { PurchaseForm } from "@/components/purchases/PurchaseForm";
 
 export default async function NewPurchasePage() {
-  const [suppliers, products] = await Promise.all([
-    prisma.supplier.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
-    prisma.product.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
-  ]);
+  const { suppliers, products } = await prisma.$transaction(
+    async (tx) => {
+      const suppliers = await tx.supplier.findMany({
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+      });
+      const products = await tx.product.findMany({
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+      });
+      return { suppliers, products };
+    },
+    interactiveTransactionOptions
+  );
   /** Plain objects only — Prisma Decimals cannot cross the server/client boundary */
   const suppliersPlain = suppliers.map((s) => ({
     id: s.id,
