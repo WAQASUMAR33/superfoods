@@ -114,9 +114,9 @@ export default async function SaleDetailPage({
                 sx={{
                   px: { xs: 2.5, sm: 3 },
                   py: { xs: 2.5, sm: 3 },
-                  background: (theme) =>
-                    `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 100%)`,
-                  color: "primary.contrastText",
+                  /** Static gradient — must not use `(theme) =>` here: MUI roots are client components and RSC cannot serialize function props. */
+                  background: "linear-gradient(135deg, rgb(0, 107, 149) 0%, #0099D6 100%)",
+                  color: "#fff",
                 }}
               >
                 <Stack
