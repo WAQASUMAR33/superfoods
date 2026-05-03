@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
 import Link from "next/link";
+import { getServerSession } from "next-auth";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
@@ -15,9 +16,12 @@ import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import AddIcon from "@mui/icons-material/Add";
 
+import { ExpenseActions } from "@/components/expenses/ExpenseActions";
 import { Header } from "@/components/layout/Header";
 import { UrlSyncedFilters } from "@/components/mui/UrlSyncedFilters";
+import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isAdmin } from "@/lib/roles";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default async function ExpensesPage({
@@ -25,6 +29,8 @@ export default async function ExpensesPage({
 }: {
   searchParams: Promise<{ q?: string; categoryId?: string; paymentMethod?: string }>;
 }) {
+  const session = await getServerSession(authOptions);
+  const canManage = isAdmin((session?.user as { role?: string })?.role);
   const params = await searchParams;
   const q = params.q?.trim();
   const categoryId = params.categoryId ? Number(params.categoryId) : undefined;
@@ -134,6 +140,7 @@ export default async function ExpensesPage({
                   <TableCell>Description</TableCell>
                   <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Method</TableCell>
                   <TableCell align="right">Amount</TableCell>
+                  {canManage && <TableCell align="right">Actions</TableCell>}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -154,11 +161,27 @@ export default async function ExpensesPage({
                     <TableCell align="right" sx={{ color: "error.main", fontWeight: 600 }}>
                       {formatCurrency(e.amount)}
                     </TableCell>
+                    {canManage && (
+                      <TableCell align="right">
+                        <ExpenseActions
+                          expense={{
+                            id: e.id,
+                            categoryId: e.categoryId,
+                            amount: Number(e.amount),
+                            description: e.description,
+                            expenseDate: e.expenseDate,
+                            paymentMethod: e.paymentMethod,
+                            reference: e.reference,
+                          }}
+                          categories={categories.map((c) => ({ id: c.id, name: c.name }))}
+                        />
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
                 {expenses.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5}>
+                    <TableCell colSpan={canManage ? 6 : 5}>
                       <Typography sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
                         No expenses match your filters.
                       </Typography>

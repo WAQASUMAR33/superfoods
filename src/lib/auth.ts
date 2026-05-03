@@ -18,8 +18,11 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials?.username || !credentials?.password) return null;
 
+        const username = String(credentials.username).trim();
+        if (!username) return null;
+
         const user = await prisma.user.findUnique({
-          where: { username: credentials.username },
+          where: { username },
         });
 
         if (!user || !user.isActive) return null;

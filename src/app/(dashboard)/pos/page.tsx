@@ -1,22 +1,26 @@
 export const dynamic = "force-dynamic";
 import { prisma } from "@/lib/prisma";
 import { getStockLevels } from "@/lib/inventory";
+import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 import { POSTerminal } from "@/components/pos/POSTerminal";
 
 export default async function POSPage() {
-  const [products, customers] = await Promise.all([
-    prisma.product.findMany({
-      where: { isActive: true },
-      include: { brand: true },
-      orderBy: [{ variety: "asc" }, { name: "asc" }],
-    }),
-    prisma.customer.findMany({
-      where: { isActive: true },
-      orderBy: { name: "asc" },
-    }),
-  ]);
-
-  const stockLevels = await getStockLevels(prisma);
+  const { products, customers, stockLevels } = await prisma.$transaction(
+    async (tx) => {
+      const products = await tx.product.findMany({
+        where: { isActive: true },
+        include: { brand: true },
+        orderBy: [{ variety: "asc" }, { name: "asc" }],
+      });
+      const customers = await tx.customer.findMany({
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+      });
+      const stockLevels = await getStockLevels(tx);
+      return { products, customers, stockLevels };
+    },
+    interactiveTransactionOptions
+  );
 
   /** Plain JSON only — Prisma Decimals cannot be passed to Client Components */
   const productsPlain = products.map((p) => ({

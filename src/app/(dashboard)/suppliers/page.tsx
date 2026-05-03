@@ -19,6 +19,7 @@ import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import { Header } from "@/components/layout/Header";
 import { UrlSyncedFilters } from "@/components/mui/UrlSyncedFilters";
 import { prisma } from "@/lib/prisma";
+import { lastRunningBalancesBySupplierId } from "@/lib/partyBalances";
 import { formatCurrency } from "@/lib/utils";
 
 export default async function SuppliersPage({
@@ -50,16 +51,7 @@ export default async function SuppliersPage({
     include: { _count: { select: { purchases: true } } },
   });
 
-  const balances = await Promise.all(
-    suppliers.map(async (s) => {
-      const last = await prisma.partyLedgerEntry.findFirst({
-        where: { supplierId: s.id },
-        orderBy: { id: "desc" },
-      });
-      return { id: s.id, balance: Number(last?.runningBalance ?? s.openingBalance) };
-    })
-  );
-  const balanceMap = Object.fromEntries(balances.map((b) => [b.id, b.balance]));
+  const balanceMap = await lastRunningBalancesBySupplierId(prisma, suppliers);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0, flex: 1 }}>

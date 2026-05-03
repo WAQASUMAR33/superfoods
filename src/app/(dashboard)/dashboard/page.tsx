@@ -22,6 +22,7 @@ import { UrlSyncedFilters } from "@/components/mui/UrlSyncedFilters";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/utils";
 import { getStockLevels } from "@/lib/inventory";
+import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 import { DashboardCharts } from "./DashboardCharts";
 
 const SALE_STATUSES = ["COMPLETED", "CREDIT", "PARTIALLY_PAID", "RETURNED"] as const;
@@ -45,22 +46,6 @@ async function getDashboardData(recent?: { q?: string; status?: string }) {
       : {}),
   };
 
-  const [salesToday, purchasesToday, products, lowStockProducts, recentSales] = await Promise.all([
-    prisma.sale.aggregate({ where: { saleDate: { gte: today } }, _sum: { totalAmount: true }, _count: true }),
-    prisma.purchase.aggregate({ where: { purchaseDate: { gte: today } }, _sum: { totalAmount: true }, _count: true }),
-    prisma.product.findMany({ where: { isActive: true }, include: { brand: true } }),
-    prisma.product.findMany({ where: { isActive: true } }),
-    prisma.sale.findMany({
-      take: 8,
-      where: recentWhere,
-      orderBy: { saleDate: "desc" },
-      include: { customer: true, items: true },
-    }),
-  ]);
-
-  const stockLevels = await getStockLevels(prisma);
-  const lowStockCount = lowStockProducts.filter((p) => (stockLevels[p.id] ?? 0) <= Number(p.lowStockThresholdKg)).length;
-
   const last7Days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
     d.setDate(d.getDate() - (6 - i));
@@ -68,29 +53,65 @@ async function getDashboardData(recent?: { q?: string; status?: string }) {
     return d;
   });
 
-  const salesChart = await Promise.all(
-    last7Days.map(async (day) => {
-      const next = new Date(day);
-      next.setDate(next.getDate() + 1);
-      const res = await prisma.sale.aggregate({
-        where: { saleDate: { gte: day, lt: next } },
+  return prisma.$transaction(
+    async (tx) => {
+      const salesToday = await tx.sale.aggregate({
+        where: { saleDate: { gte: today } },
         _sum: { totalAmount: true },
+        _count: true,
       });
-      return {
-        date: day.toLocaleDateString("en-PK", { weekday: "short", day: "numeric" }),
-        sales: Number(res._sum.totalAmount ?? 0),
-      };
-    })
-  );
+      const purchasesToday = await tx.purchase.aggregate({
+        where: { purchaseDate: { gte: today } },
+        _sum: { totalAmount: true },
+        _count: true,
+      });
+      const products = await tx.product.findMany({
+        where: { isActive: true },
+        include: { brand: true },
+      });
+      const lowStockProducts = await tx.product.findMany({
+        where: { isActive: true },
+      });
+      const recentSales = await tx.sale.findMany({
+        take: 8,
+        where: recentWhere,
+        orderBy: { saleDate: "desc" },
+        include: { customer: true, items: true },
+      });
 
-  return {
-    salesToday: { amount: Number(salesToday._sum.totalAmount ?? 0), count: salesToday._count },
-    purchasesToday: { amount: Number(purchasesToday._sum.totalAmount ?? 0), count: purchasesToday._count },
-    lowStockCount,
-    totalProducts: products.length,
-    recentSales,
-    salesChart,
-  };
+      const stockLevels = await getStockLevels(tx);
+      const lowStockCount = lowStockProducts.filter(
+        (p) => (stockLevels[p.id] ?? 0) <= Number(p.lowStockThresholdKg)
+      ).length;
+
+      const salesChart: { date: string; sales: number }[] = [];
+      for (const day of last7Days) {
+        const next = new Date(day);
+        next.setDate(next.getDate() + 1);
+        const res = await tx.sale.aggregate({
+          where: { saleDate: { gte: day, lt: next } },
+          _sum: { totalAmount: true },
+        });
+        salesChart.push({
+          date: day.toLocaleDateString("en-PK", { weekday: "short", day: "numeric" }),
+          sales: Number(res._sum.totalAmount ?? 0),
+        });
+      }
+
+      return {
+        salesToday: { amount: Number(salesToday._sum.totalAmount ?? 0), count: salesToday._count },
+        purchasesToday: {
+          amount: Number(purchasesToday._sum.totalAmount ?? 0),
+          count: purchasesToday._count,
+        },
+        lowStockCount,
+        totalProducts: products.length,
+        recentSales,
+        salesChart,
+      };
+    },
+    interactiveTransactionOptions
+  );
 }
 
 const KPI_GRADS = [
