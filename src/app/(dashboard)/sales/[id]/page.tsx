@@ -210,16 +210,7 @@ export default async function SaleDetailPage({
                     </Typography>
                     <Paper variant="outlined" sx={{ p: 2, borderRadius: 1.5, bgcolor: "background.paper" }}>
                       <DetailRow label="Subtotal">{formatCurrency(sale.subtotal)}</DetailRow>
-                      <DetailRow label="Bill discount">
-                        {Number(sale.discountAmount) > 0
-                          ? `-${formatCurrency(sale.discountAmount)}`
-                          : formatCurrency(0)}
-                      </DetailRow>
-                      <DetailRow label="Service charge">
-                        {Number(sale.serviceChargeAmount) > 0
-                          ? `+${formatCurrency(sale.serviceChargeAmount)}`
-                          : formatCurrency(0)}
-                      </DetailRow>
+                      <DetailRow label="Discount">{formatCurrency(sale.discountAmount)}</DetailRow>
                       <Divider sx={{ my: 1 }} />
                       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 2, py: 0.5 }}>
                         <Typography variant="body2" sx={{ fontWeight: 700 }}>

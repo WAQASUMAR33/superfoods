@@ -61,7 +61,6 @@ export function POSTerminal({ products, customers }: Props) {
         discount: i.discount,
       })),
       discountAmount,
-      serviceChargeAmount: state.serviceChargeAmount,
       paymentMethod: state.paymentMethod,
       paidAmount: state.paidAmount,
       notes: state.notes,
@@ -265,21 +264,6 @@ export function POSTerminal({ products, customers }: Props) {
                 onChange={(e) => dispatch({ type: "SET_GLOBAL_DISCOUNT", discount: Number(e.target.value) })}
                 className="w-16 rounded border px-2 py-0.5 text-xs text-right" />
               <span className="ml-auto text-sm text-red-500">-{formatCurrency(discountAmount)}</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Service charge</span>
-              <input
-                type="number"
-                min={0}
-                step={0.01}
-                value={state.serviceChargeAmount || ""}
-                onChange={(e) =>
-                  dispatch({ type: "SET_SERVICE_CHARGE", amount: Number(e.target.value) || 0 })
-                }
-                className="flex-1 rounded border px-2 py-0.5 text-xs text-right"
-                placeholder="0"
-              />
             </div>
 
             <div className="flex justify-between border-t pt-2">

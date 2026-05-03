@@ -7,7 +7,6 @@ const initialState: CartState = {
   customerId: null,
   customerName: "",
   globalDiscount: 0,
-  serviceChargeAmount: 0,
   paymentMethod: "CASH",
   paidAmount: 0,
   notes: "",
@@ -80,9 +79,6 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     case "SET_GLOBAL_DISCOUNT":
       return { ...state, globalDiscount: action.discount };
 
-    case "SET_SERVICE_CHARGE":
-      return { ...state, serviceChargeAmount: Math.max(0, action.amount) };
-
     case "SET_PAYMENT_METHOD":
       return { ...state, paymentMethod: action.method };
 
@@ -105,7 +101,7 @@ export function useCart() {
 
   const subtotal = state.items.reduce((sum, i) => sum + i.lineTotal, 0);
   const discountAmount = (subtotal * state.globalDiscount) / 100;
-  const total = subtotal - discountAmount + state.serviceChargeAmount;
+  const total = subtotal - discountAmount;
   const change = state.paymentMethod === "CASH" ? Math.max(0, state.paidAmount - total) : 0;
 
   return { state, dispatch, subtotal, discountAmount, total, change };

@@ -267,16 +267,7 @@ export default async function DashboardPage({
                       <TableCell>Invoice</TableCell>
                       <TableCell>Customer</TableCell>
                       <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Items</TableCell>
-                      <TableCell align="right" sx={{ display: { xs: "none", md: "table-cell" } }}>
-                        Subtotal
-                      </TableCell>
-                      <TableCell align="right" sx={{ display: { xs: "none", md: "table-cell" } }}>
-                        Disc.
-                      </TableCell>
-                      <TableCell align="right" sx={{ display: { xs: "none", md: "table-cell" } }}>
-                        Svc.
-                      </TableCell>
-                      <TableCell align="right">Total</TableCell>
+                      <TableCell align="right">Amount</TableCell>
                       <TableCell>Status</TableCell>
                     </TableRow>
                   </TableHead>
@@ -297,35 +288,6 @@ export default async function DashboardPage({
                         </TableCell>
                         <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>
                           {sale.items.length}
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{
-                            display: { xs: "none", md: "table-cell" },
-                            color: "text.secondary",
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {formatCurrency(sale.subtotal)}
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{
-                            display: { xs: "none", md: "table-cell" },
-                            color: Number(sale.discountAmount) > 0 ? "error.main" : "text.disabled",
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {Number(sale.discountAmount) > 0 ? `-${formatCurrency(sale.discountAmount)}` : "—"}
-                        </TableCell>
-                        <TableCell
-                          align="right"
-                          sx={{
-                            display: { xs: "none", md: "table-cell" },
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          {Number(sale.serviceChargeAmount) > 0 ? formatCurrency(sale.serviceChargeAmount) : "—"}
                         </TableCell>
                         <TableCell align="right" sx={{ fontWeight: 700 }}>
                           {formatCurrency(sale.totalAmount)}
