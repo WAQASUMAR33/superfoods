@@ -18,6 +18,7 @@ import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 import { Header } from "@/components/layout/Header";
+import { CustomerLedgerPanel } from "@/components/customers/CustomerLedgerPanel";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -34,7 +35,7 @@ export default async function CustomerDetailPage({
     where: { id: customerId },
     include: {
       sales: { orderBy: { saleDate: "desc" }, take: 20 },
-      ledgerEntries: { orderBy: { entryDate: "desc" }, take: 50 },
+      ledgerEntries: { orderBy: { entryDate: "desc" }, take: 1 },
     },
   });
   if (!customer) notFound();
@@ -137,42 +138,12 @@ export default async function CustomerDetailPage({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent>
-              <Typography variant="h6" sx={{ mb: 1.5 }}>
-                Ledger Entries
-              </Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Description</TableCell>
-                      <TableCell align="right">Amount</TableCell>
-                      <TableCell align="right">Balance</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {customer.ledgerEntries.map((entry) => (
-                      <TableRow key={entry.id}>
-                        <TableCell>{formatDate(entry.entryDate)}</TableCell>
-                        <TableCell>{entry.description}</TableCell>
-                        <TableCell align="right">{formatCurrency(entry.amount)}</TableCell>
-                        <TableCell align="right">{formatCurrency(entry.runningBalance)}</TableCell>
-                      </TableRow>
-                    ))}
-                    {customer.ledgerEntries.length === 0 && (
-                      <TableRow>
-                        <TableCell colSpan={4} sx={{ py: 3, textAlign: "center", color: "text.secondary" }}>
-                          No ledger entries yet.
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </CardContent>
-          </Card>
+          <CustomerLedgerPanel
+            customerId={customer.id}
+            customerName={customer.name}
+            customerCode={customer.code}
+            openingBalance={Number(customer.openingBalance)}
+          />
         </Container>
       </Box>
     </Box>

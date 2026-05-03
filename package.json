@@ -43,6 +43,8 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "dotenv": "^17.4.2",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^1.9.0",
     "mysql2": "^3.22.2",
     "next": "16.2.4",
