@@ -1,15 +1,12 @@
 export const dynamic = "force-dynamic";
 
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import Box from "@mui/material/Box";
-import Button from "@mui/material/Button";
 import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
 import Divider from "@mui/material/Divider";
 import Grid from "@mui/material/Grid";
-import MuiLink from "@mui/material/Link";
 import Paper from "@mui/material/Paper";
 import Stack from "@mui/material/Stack";
 import Table from "@mui/material/Table";
@@ -19,13 +16,13 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import PersonIcon from "@mui/icons-material/Person";
 import PaymentOutlinedIcon from "@mui/icons-material/PaymentOutlined";
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 
 import { Header } from "@/components/layout/Header";
+import { CustomerProfileLink, SaleHistoryBackButton } from "@/components/sales/SaleDetailNavClient";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDateTime, formatNumber } from "@/lib/utils";
 
@@ -95,9 +92,7 @@ export default async function SaleDetailPage({
         <Container maxWidth="md">
           <Stack spacing={2.5}>
             <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5 }}>
-              <Button component={Link} href="/sales" startIcon={<ArrowBackIcon />} size="small" variant="text">
-                Sales history
-              </Button>
+              <SaleHistoryBackButton />
             </Box>
 
             <Paper
@@ -174,14 +169,7 @@ export default async function SaleDetailPage({
                     </Typography>
                     {sale.customer ? (
                       <Stack spacing={0.5}>
-                        <MuiLink
-                          component={Link}
-                          href={`/customers/${sale.customer.id}`}
-                          underline="hover"
-                          sx={{ fontWeight: 700, fontSize: "1.05rem", color: "text.primary" }}
-                        >
-                          {sale.customer.name}
-                        </MuiLink>
+                        <CustomerProfileLink customerId={sale.customer.id} name={sale.customer.name} />
                         <Typography variant="body2" color="text.secondary">
                           Code {sale.customer.code}
                           {sale.customer.phone ? ` · ${sale.customer.phone}` : ""}
