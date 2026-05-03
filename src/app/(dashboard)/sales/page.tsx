@@ -73,8 +73,8 @@ export default async function SalesPage({
               gap: 2,
             }}
           >
-            <Typography variant="body2" color="text.secondary">
-              {sales.length} sales
+            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 720 }}>
+              {sales.length} sales · Subtotal = sum of lines (after line % off). Discount / Service = bill-level amounts.
             </Typography>
           <Link href="/pos" prefetch style={{ textDecoration: "none" }}>
             <Button variant="contained" color="success" startIcon={<PointOfSaleIcon />}>
@@ -108,6 +108,15 @@ export default async function SalesPage({
                   <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} align="center">
                     Items
                   </TableCell>
+                  <TableCell align="right" sx={{ display: { xs: "none", lg: "table-cell" } }}>
+                    Subtotal
+                  </TableCell>
+                  <TableCell align="right" sx={{ display: { xs: "none", lg: "table-cell" } }}>
+                    Discount
+                  </TableCell>
+                  <TableCell align="right" sx={{ display: { xs: "none", lg: "table-cell" } }}>
+                    Service
+                  </TableCell>
                   <TableCell align="right">Total</TableCell>
                   <TableCell sx={{ display: { xs: "none", md: "table-cell" } }} align="right">
                     Paid
@@ -133,6 +142,32 @@ export default async function SalesPage({
                     <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} align="center">
                       {s._count.items}
                     </TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{ display: { xs: "none", lg: "table-cell" }, color: "text.secondary", fontVariantNumeric: "tabular-nums" }}
+                    >
+                      {formatCurrency(s.subtotal)}
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{
+                        display: { xs: "none", lg: "table-cell" },
+                        color: Number(s.discountAmount) > 0 ? "error.main" : "text.disabled",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {Number(s.discountAmount) > 0 ? `-${formatCurrency(s.discountAmount)}` : "—"}
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{
+                        display: { xs: "none", lg: "table-cell" },
+                        color: Number(s.serviceChargeAmount) > 0 ? "text.primary" : "text.disabled",
+                        fontVariantNumeric: "tabular-nums",
+                      }}
+                    >
+                      {Number(s.serviceChargeAmount) > 0 ? formatCurrency(s.serviceChargeAmount) : "—"}
+                    </TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600 }}>
                       {formatCurrency(s.totalAmount)}
                     </TableCell>
@@ -151,7 +186,7 @@ export default async function SalesPage({
                 ))}
                 {sales.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8}>
+                    <TableCell colSpan={11}>
                       <Typography sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
                         No sales match your filters.
                       </Typography>

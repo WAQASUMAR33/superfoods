@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
       })
     );
 
-    const totalAmount = subtotal - data.discountAmount;
+    const totalAmount = subtotal - data.discountAmount + data.serviceChargeAmount;
     const isCredit = data.paymentMethod === "CREDIT";
     const creditAmount = isCredit ? totalAmount : Math.max(0, totalAmount - data.paidAmount);
     const changeAmount = !isCredit ? Math.max(0, data.paidAmount - totalAmount) : 0;
@@ -73,6 +73,7 @@ export async function POST(req: NextRequest) {
         status,
         subtotal,
         discountAmount: data.discountAmount,
+        serviceChargeAmount: data.serviceChargeAmount,
         totalAmount,
         paidAmount: isCredit ? 0 : data.paidAmount,
         creditAmount,

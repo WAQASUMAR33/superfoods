@@ -18,6 +18,7 @@ interface ReceiptSale {
   items: ReceiptItem[];
   subtotal: number;
   discountAmount: number;
+  serviceChargeAmount?: number;
   totalAmount: number;
   paidAmount: number;
   changeAmount: number;
@@ -64,6 +65,11 @@ export function SaleReceipt({ sale }: { sale: ReceiptSale }) {
         {Number(sale.discountAmount) > 0 && (
           <div className="flex justify-between text-xs text-red-600">
             <span>Discount</span><span>-{formatCurrency(sale.discountAmount)}</span>
+          </div>
+        )}
+        {Number(sale.serviceChargeAmount) > 0 && (
+          <div className="flex justify-between text-xs text-gray-700">
+            <span>Service charge</span><span>+{formatCurrency(sale.serviceChargeAmount ?? 0)}</span>
           </div>
         )}
         <div className="flex justify-between font-bold border-t pt-1 mt-1">

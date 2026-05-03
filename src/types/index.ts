@@ -60,6 +60,7 @@ export const SaleSchema = z.object({
   customerId: z.number().optional(),
   items: z.array(SaleItemSchema).min(1),
   discountAmount: z.number().min(0).default(0),
+  serviceChargeAmount: z.number().min(0).default(0),
   paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "CHEQUE", "CREDIT"]),
   paidAmount: z.number().min(0),
   notes: z.string().optional(),
@@ -100,6 +101,8 @@ export interface CartState {
   customerId: number | null;
   customerName: string;
   globalDiscount: number;
+  /** Bill-level service charge in PKR (e.g. cover charge), not a percentage. */
+  serviceChargeAmount: number;
   paymentMethod: "CASH" | "BANK_TRANSFER" | "CHEQUE" | "CREDIT";
   paidAmount: number;
   notes: string;
@@ -113,6 +116,7 @@ export type CartAction =
   | { type: "SET_ITEM_DISCOUNT"; productId: number; discount: number }
   | { type: "SET_CUSTOMER"; customerId: number | null; customerName: string }
   | { type: "SET_GLOBAL_DISCOUNT"; discount: number }
+  | { type: "SET_SERVICE_CHARGE"; amount: number }
   | { type: "SET_PAYMENT_METHOD"; method: CartState["paymentMethod"] }
   | { type: "SET_PAID_AMOUNT"; amount: number }
   | { type: "SET_NOTES"; notes: string }
