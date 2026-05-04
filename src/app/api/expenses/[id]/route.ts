@@ -50,8 +50,11 @@ async function rebuildExpenseJournal(
     where: { referenceType: "EXPENSE", referenceId: expense.id },
   });
 
+  const entryDate = new Date(expense.expenseDate);
+
   await postJournalEntry(tx as Parameters<typeof postJournalEntry>[0], {
     description: `Expense: ${category?.name ?? "Misc"} - ${expense.description ?? ""}`,
+    entryDate,
     referenceType: "EXPENSE",
     referenceId: expense.id,
     lines: [

@@ -30,6 +30,9 @@ export default async function UsersPage() {
     },
   });
 
+  const rawId = Number((session.user as { id?: string }).id);
+  const currentUserId = Number.isFinite(rawId) ? rawId : undefined;
+
   return (
     <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0, flex: 1 }}>
       <Header title="Users" />
@@ -38,7 +41,10 @@ export default async function UsersPage() {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
             Manage application accounts and roles. Only administrators see this section.
           </Typography>
-          <UsersTable initialUsers={users.map((u) => ({ ...u, createdAt: u.createdAt.toISOString() }))} />
+          <UsersTable
+            currentUserId={currentUserId}
+            initialUsers={users.map((u) => ({ ...u, createdAt: u.createdAt.toISOString() }))}
+          />
         </Container>
       </Box>
     </Box>

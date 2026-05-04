@@ -79,6 +79,7 @@ export async function POST(req: NextRequest) {
 
         await postJournalEntry(tx as Parameters<typeof postJournalEntry>[0], {
           description: `Expense: ${category?.name ?? "Misc"} - ${parsed.data.description ?? ""}`,
+          entryDate: expenseDate,
           referenceType: "EXPENSE",
           referenceId: expense.id,
           lines: [

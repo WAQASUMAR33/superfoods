@@ -28,7 +28,9 @@ import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
 import EditIcon from "@mui/icons-material/Edit";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 
+import { errorMessageFromFetchResponse } from "@/lib/httpErrorMessage";
 import { USER_ROLES, type UserRole } from "@/lib/roles";
 
 export type UserRowPayload = {
@@ -43,6 +45,8 @@ export type UserRowPayload = {
 
 type Props = {
   initialUsers: UserRowPayload[];
+  /** Logged-in user id — cannot delete yourself. */
+  currentUserId?: number;
 };
 
 const ROLES = USER_ROLES;
@@ -58,16 +62,19 @@ function chipColor(role: string): "primary" | "warning" | "default" | "secondary
   }
 }
 
-export function UsersTable({ initialUsers }: Props) {
+export function UsersTable({ initialUsers, currentUserId }: Props) {
   const [users, setUsers] = useState<UserRowPayload[]>(initialUsers);
   const [addOpen, setAddOpen] = useState(false);
   const [editRow, setEditRow] = useState<UserRowPayload | null>(null);
+  const [userToDelete, setUserToDelete] = useState<UserRowPayload | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
   const [banner, setBanner] = useState<{ severity: "error" | "success"; msg: string } | null>(
     null
   );
   const [pendingId, setPendingId] = useState<number | null>(null);
 
   const merged = useMemo(() => [...users].sort((a, b) => a.username.localeCompare(b.username)), [users]);
+  const soleAdmin = useMemo(() => users.filter((u) => u.role === "ADMIN").length <= 1, [users]);
 
   function pushBanner(severity: "error" | "success", msg: string) {
     setBanner({ severity, msg });
@@ -81,6 +88,30 @@ export function UsersTable({ initialUsers }: Props) {
       return;
     }
     setUsers(data.map((u) => ({ ...u })));
+  }
+
+  function canDeleteUser(row: UserRowPayload): boolean {
+    if (currentUserId !== undefined && row.id === currentUserId) return false;
+    if (row.role === "ADMIN" && soleAdmin) return false;
+    return true;
+  }
+
+  async function confirmDeleteUser() {
+    if (!userToDelete) return;
+    setDeleteBusy(true);
+    setBanner(null);
+    try {
+      const res = await fetch(`/api/users/${userToDelete.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        pushBanner("error", await errorMessageFromFetchResponse(res));
+        return;
+      }
+      pushBanner("success", `User "${userToDelete.username}" was removed.`);
+      setUserToDelete(null);
+      await refreshList();
+    } finally {
+      setDeleteBusy(false);
+    }
   }
 
   async function toggleActive(row: UserRowPayload, next: boolean) {
@@ -157,14 +188,21 @@ export function UsersTable({ initialUsers }: Props) {
                   )}
                 </TableCell>
                 <TableCell align="right">
-                  <Button
-                    size="small"
-                    startIcon={<EditIcon />}
-                    variant="text"
-                    onClick={() => setEditRow(row)}
-                  >
-                    Edit
-                  </Button>
+                  <Box sx={{ display: "inline-flex", flexWrap: "wrap", gap: 0.5, justifyContent: "flex-end" }}>
+                    <Button size="small" startIcon={<EditIcon />} variant="text" onClick={() => setEditRow(row)}>
+                      Edit
+                    </Button>
+                    <Button
+                      size="small"
+                      color="error"
+                      variant="text"
+                      startIcon={<DeleteOutlineOutlinedIcon sx={{ fontSize: 18 }} />}
+                      disabled={!canDeleteUser(row) || deleteBusy || pendingId !== null}
+                      onClick={() => setUserToDelete(row)}
+                    >
+                      Remove
+                    </Button>
+                  </Box>
                 </TableCell>
               </TableRow>
             ))}
@@ -193,6 +231,26 @@ export function UsersTable({ initialUsers }: Props) {
         }}
         onError={(msg) => pushBanner("error", msg)}
       />
+
+      <Dialog open={userToDelete !== null} onClose={() => !deleteBusy && setUserToDelete(null)} maxWidth="xs" fullWidth>
+        <DialogTitle>Remove user?</DialogTitle>
+        <DialogContent>
+          {userToDelete ? (
+            <Typography variant="body2" color="text.secondary">
+              This permanently deletes <strong>{userToDelete.username}</strong> ({userToDelete.fullName}). Users linked to
+              sales, purchases, or stock adjustments cannot be removed — deactivate them instead.
+            </Typography>
+          ) : null}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={() => setUserToDelete(null)} disabled={deleteBusy}>
+            Cancel
+          </Button>
+          <Button color="error" variant="contained" disabled={deleteBusy} onClick={() => void confirmDeleteUser()}>
+            {deleteBusy ? <CircularProgress size={20} color="inherit" /> : "Remove user"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Paper>
   );
 }

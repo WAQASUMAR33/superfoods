@@ -1,6 +1,35 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 type TxClient = Omit<PrismaClient, "$connect" | "$disconnect" | "$on" | "$transaction" | "$use" | "$extends">;
+
+/** Next JE-{year}-{seq} based on existing rows (not row count — avoids duplicates after deletes). */
+async function allocateJournalEntryNo(tx: TxClient, entryDate: Date): Promise<string> {
+  const year = entryDate.getFullYear();
+  const prefix = `JE-${year}-`;
+  const last = await tx.journalEntry.findFirst({
+    where: { entryNo: { startsWith: prefix } },
+    orderBy: { entryNo: "desc" },
+    select: { entryNo: true },
+  });
+  let seq = 1;
+  if (last?.entryNo.startsWith(prefix)) {
+    const suffix = last.entryNo.slice(prefix.length);
+    const n = parseInt(suffix, 10);
+    if (Number.isFinite(n)) seq = n + 1;
+  }
+  if (seq > 99999) {
+    return `${prefix}${Date.now().toString(36).toUpperCase()}`;
+  }
+  return `${prefix}${String(seq).padStart(5, "0")}`;
+}
+
+function isJournalEntryNoUniqueViolation(e: unknown): boolean {
+  if (!(e instanceof Prisma.PrismaClientKnownRequestError) || e.code !== "P2002") return false;
+  const t = e.meta?.target;
+  if (Array.isArray(t)) return t.some((x) => String(x).includes("entryNo"));
+  if (typeof t === "string") return t.includes("entryNo");
+  return true;
+}
 
 export interface JournalLineInput {
   accountId: number;
@@ -39,31 +68,39 @@ export async function postJournalEntry(
     throw new Error(`Journal entry unbalanced: debits=${totalDebits}, credits=${totalCredits}`);
   }
 
-  const count = await tx.journalEntry.count();
-  const entryNo = `JE-${new Date().getFullYear()}-${String(count + 1).padStart(5, "0")}`;
+  const resolvedDate = entryDate ?? new Date();
+  const lineCreates = lines.map((l) => ({
+    accountId: l.accountId,
+    type: l.type,
+    amount: l.amount,
+    description: l.description,
+    userId: l.userId,
+  }));
 
-  return tx.journalEntry.create({
-    data: {
-      entryNo,
-      description,
-      entryDate: entryDate ?? new Date(),
-      referenceType,
-      referenceId,
-      saleId,
-      purchaseId,
-      createdById,
-      lines: {
-        create: lines.map((l) => ({
-          accountId: l.accountId,
-          type: l.type,
-          amount: l.amount,
-          description: l.description,
-          userId: l.userId,
-        })),
-      },
-    },
-    include: { lines: true },
-  });
+  for (let attempt = 0; attempt < 12; attempt++) {
+    const entryNo = await allocateJournalEntryNo(tx, resolvedDate);
+    try {
+      return await tx.journalEntry.create({
+        data: {
+          entryNo,
+          description,
+          entryDate: resolvedDate,
+          referenceType,
+          referenceId,
+          saleId,
+          purchaseId,
+          createdById,
+          lines: { create: lineCreates },
+        },
+        include: { lines: true },
+      });
+    } catch (e) {
+      if (isJournalEntryNoUniqueViolation(e) && attempt < 11) continue;
+      throw e;
+    }
+  }
+
+  throw new Error("Could not allocate a unique journal entry number");
 }
 
 export async function getSystemAccounts(tx: TxClient) {

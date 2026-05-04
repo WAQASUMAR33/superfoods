@@ -152,3 +152,53 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const ctx = await requireAdmin(_req, params);
+  if ("response" in ctx) return ctx.response;
+  const { numericId, selfId } = ctx;
+
+  if (selfId !== undefined && String(numericId) === selfId) {
+    return NextResponse.json({ error: "You cannot delete your own account." }, { status: 409 });
+  }
+
+  const existing = await prisma.user.findUnique({ where: { id: numericId } });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  if (existing.role === "ADMIN") {
+    const adminCount = await prisma.user.count({ where: { role: "ADMIN" } });
+    if (adminCount <= 1) {
+      return NextResponse.json(
+        { error: "Cannot delete the only ADMIN user. Create another administrator first." },
+        { status: 409 }
+      );
+    }
+  }
+
+  const [sales, purchases, adjustments] = await Promise.all([
+    prisma.sale.count({ where: { userId: numericId } }),
+    prisma.purchase.count({ where: { userId: numericId } }),
+    prisma.stockAdjustment.count({ where: { userId: numericId } }),
+  ]);
+  if (sales + purchases + adjustments > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "Cannot delete this user: they are linked to sales, purchases, or stock adjustments. Deactivate the account instead.",
+      },
+      { status: 409 }
+    );
+  }
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await tx.journalLine.updateMany({ where: { userId: numericId }, data: { userId: null } });
+      await tx.user.delete({ where: { id: numericId } });
+    });
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Could not delete user";
+    console.error("[DELETE /api/users/[id]]", e);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}

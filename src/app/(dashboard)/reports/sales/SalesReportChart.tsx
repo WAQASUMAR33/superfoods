@@ -2,7 +2,7 @@
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { APP_LOCALE } from "@/config/locale";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatCurrencyCompact } from "@/lib/utils";
 
 interface Props { sales: { date: string; amount: number }[]; }
 
@@ -23,7 +23,7 @@ export function SalesReportChart({ sales }: Props) {
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
           <XAxis dataKey="date" tick={{ fontSize: 10 }} />
-          <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `${(v / 1000).toFixed(0)}K`} />
+          <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => formatCurrencyCompact(Number(v ?? 0))} />
           <Tooltip formatter={(v) => formatCurrency(Number(v ?? 0))} />
           <Bar dataKey="amount" fill="#2563eb" radius={[3, 3, 0, 0]} name="Sales" />
         </BarChart>

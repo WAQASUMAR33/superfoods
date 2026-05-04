@@ -26,7 +26,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 
 import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC, DEFAULT_BUSINESS_CONTACT } from "@/config/branding";
 import { partyLedgerDebitCreditAmounts, partyLedgerPreBalance } from "@/lib/partyLedgerDisplay";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatCurrencyAscii, formatDate } from "@/lib/utils";
 
 type LedgerEntry = {
   id: number;
@@ -142,7 +142,7 @@ async function downloadLedgerPdf(
   y += 4.5;
   doc.text(`Statement period: ${fromYmd}  →  ${toYmd}`, margin, y);
   y += 4.5;
-  doc.text(`Opening balance (reference): ${formatCurrency(openingBalance)}`, margin, y);
+  doc.text(`Opening balance (reference): ${formatCurrencyAscii(openingBalance)}`, margin, y);
   y += 4.5;
   doc.text(`Lines in period: ${entries.length}`, margin, y);
   y += 6;
@@ -161,10 +161,10 @@ async function downloadLedgerPdf(
     return [
       formatDate(e.entryDate),
       e.description.replace(/\s+/g, " ").slice(0, 72),
-      formatCurrency(pre),
-      debit > 0 ? formatCurrency(debit) : "—",
-      credit > 0 ? formatCurrency(credit) : "—",
-      formatCurrency(e.runningBalance),
+      formatCurrencyAscii(pre),
+      debit > 0 ? formatCurrencyAscii(debit) : "—",
+      credit > 0 ? formatCurrencyAscii(credit) : "—",
+      formatCurrencyAscii(e.runningBalance),
     ];
   });
 
