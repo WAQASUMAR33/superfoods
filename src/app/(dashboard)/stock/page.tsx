@@ -44,11 +44,7 @@ export default async function StockPage({
           isActive: true,
           ...(q
             ? {
-                OR: [
-                  { name: { contains: q } },
-                  { code: { contains: q } },
-                  { variety: { contains: q } },
-                ],
+                OR: [{ name: { contains: q } }, { code: { contains: q } }],
               }
             : {}),
           ...(brandId && !Number.isNaN(brandId) ? { brandId } : {}),

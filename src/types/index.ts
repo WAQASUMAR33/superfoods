@@ -6,8 +6,6 @@ import { Unit } from "@/lib/units";
 export const ProductSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
-  variety: z.string().min(1),
-  grainLength: z.string().optional(),
   brandId: z.number().optional(),
   defaultUnit: z.enum(["KG", "MAUND", "BAG"]),
   salePrice: z.number().min(0),

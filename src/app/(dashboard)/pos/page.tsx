@@ -10,7 +10,7 @@ export default async function POSPage() {
       const products = await tx.product.findMany({
         where: { isActive: true },
         include: { brand: true },
-        orderBy: [{ variety: "asc" }, { name: "asc" }],
+        orderBy: [{ name: "asc" }],
       });
       const customers = await tx.customer.findMany({
         where: { isActive: true },
@@ -27,7 +27,6 @@ export default async function POSPage() {
     id: p.id,
     code: p.code,
     name: p.name,
-    variety: p.variety,
     defaultUnit: p.defaultUnit,
     salePrice: Number(p.salePrice),
     stockKg: stockLevels[p.id] ?? 0,

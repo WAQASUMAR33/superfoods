@@ -15,7 +15,7 @@ export default async function StockReportPage() {
     prisma.product.findMany({
       where: { isActive: true },
       include: { brand: true },
-      orderBy: [{ variety: "asc" }, { name: "asc" }],
+      orderBy: [{ name: "asc" }],
     }),
     getStockLevels(prisma),
   ]);
@@ -32,10 +32,9 @@ export default async function StockReportPage() {
   const refStem = `stock-valuation-${now.toISOString().slice(0, 10)}`;
 
   const reportCsv = rowsToCsv(
-    ["Product", "Variety", "Stock (Kg)", "Cost/Kg", "Cost Value", "Sale/Kg", "Sale Value"],
+    ["Product", "Stock (Kg)", "Cost/Kg", "Cost Value", "Sale/Kg", "Sale Value"],
     rows.map((r) => [
       r.name,
-      r.variety,
       r.stockKg.toFixed(3),
       r.purchasePrice.toFixed(2),
       r.value.toFixed(2),
@@ -89,7 +88,6 @@ export default async function StockReportPage() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Product</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-500">Variety</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-500">Stock (Kg)</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-500">Cost/Kg</th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-500">Cost Value</th>
@@ -101,7 +99,6 @@ export default async function StockReportPage() {
                 {rows.map((r) => (
                   <tr key={r.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium">{r.name}</td>
-                    <td className="px-4 py-3 text-gray-500">{r.variety}</td>
                     <td className="px-4 py-3 text-right">{formatNumber(r.stockKg, 2)}</td>
                     <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(r.purchasePrice)}</td>
                     <td className="px-4 py-3 text-right font-medium">{formatCurrency(r.value)}</td>
@@ -112,7 +109,7 @@ export default async function StockReportPage() {
               </tbody>
               <tfoot className="bg-gray-50 font-bold">
                 <tr>
-                  <td colSpan={4} className="px-4 py-3 text-right text-xs uppercase">
+                  <td colSpan={3} className="px-4 py-3 text-right text-xs uppercase">
                     Total
                   </td>
                   <td className="px-4 py-3 text-right">{formatCurrency(totalValue)}</td>

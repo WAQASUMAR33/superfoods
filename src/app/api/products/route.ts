@@ -11,19 +11,13 @@ export async function GET(req: NextRequest) {
 
   const { searchParams } = new URL(req.url);
   const q = searchParams.get("q") ?? "";
-  const variety = searchParams.get("variety") ?? "";
 
   const products = await prisma.product.findMany({
     where: {
       isActive: true,
       ...(q && {
-        OR: [
-          { name: { contains: q } },
-          { code: { contains: q } },
-          { variety: { contains: q } },
-        ],
+        OR: [{ name: { contains: q } }, { code: { contains: q } }],
       }),
-      ...(variety && { variety }),
     },
     include: { brand: true },
     orderBy: { name: "asc" },
@@ -52,8 +46,6 @@ export async function POST(req: NextRequest) {
       data: {
         code: d.code,
         name: d.name,
-        variety: d.variety,
-        grainLength: d.grainLength?.trim() ? d.grainLength.trim() : null,
         brandId: d.brandId ?? null,
         defaultUnit: d.defaultUnit,
         salePrice: d.salePrice,

@@ -13,7 +13,7 @@ import { errorMessageFromFetchResponse } from "@/lib/httpErrorMessage";
 import { formatCurrency } from "@/lib/utils";
 
 interface Supplier { id: number; name: string; }
-interface Product { id: number; code: string; name: string; variety: string; purchasePrice: number; defaultUnit: string; }
+interface Product { id: number; code: string; name: string; purchasePrice: number; defaultUnit: string; }
 
 interface LineItem {
   productId: number;

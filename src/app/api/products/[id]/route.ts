@@ -47,8 +47,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       data: {
         code: d.code,
         name: d.name,
-        variety: d.variety,
-        grainLength: d.grainLength?.trim() ? d.grainLength.trim() : null,
         brandId: d.brandId ?? null,
         defaultUnit: d.defaultUnit,
         salePrice: d.salePrice,
@@ -70,6 +68,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  await prisma.product.update({ where: { id: Number(id) }, data: { isActive: false } });
+  const productId = Number(id);
+  if (Number.isNaN(productId)) return NextResponse.json({ error: "Invalid product id" }, { status: 400 });
+
+  const existing = await prisma.product.findUnique({ where: { id: productId }, select: { id: true } });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  await prisma.product.update({ where: { id: productId }, data: { isActive: false } });
   return NextResponse.json({ success: true });
 }

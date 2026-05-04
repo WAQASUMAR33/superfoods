@@ -39,8 +39,6 @@ model Product {
   id                  Int      @id @default(autoincrement())
   code                String   @unique
   name                String
-  variety             String
-  grainLength         String?
   brandId             Int?
   defaultUnit         String   @default("KG")
   salePrice           Decimal  @default(0) @db.Decimal(12, 2)

@@ -45,13 +45,13 @@ async function main() {
 
   // Products
   const products = [
-    { code: "BSM-1121-EL", name: "Basmati 1121 Extra Long", variety: "Basmati", grainLength: "EXTRA_LONG", brand: "Punjab Basmati", salePrice: 280, purchasePrice: 240 },
-    { code: "BSM-386-L",   name: "Basmati PK-386 Long", variety: "Basmati", grainLength: "LONG", brand: "Punjab Basmati", salePrice: 220, purchasePrice: 190 },
-    { code: "BSM-SK-L",    name: "Super Kernel Basmati", variety: "Basmati", grainLength: "LONG", brand: "Golden Grain", salePrice: 260, purchasePrice: 225 },
-    { code: "SLL-PSTA-M",  name: "Sella Parboiled Medium", variety: "Sella", grainLength: "MEDIUM", brand: "Pak Sella", salePrice: 160, purchasePrice: 140 },
-    { code: "SLL-1121-EL", name: "Sella 1121 Extra Long", variety: "Sella", grainLength: "EXTRA_LONG", brand: "Pak Sella", salePrice: 200, purchasePrice: 175 },
-    { code: "IRRI6-M",     name: "IRRI-6 Medium Grain", variety: "IRRI-6", grainLength: "MEDIUM", brand: "Star Rice", salePrice: 110, purchasePrice: 95 },
-    { code: "IRRI9-M",     name: "IRRI-9 Medium Grain", variety: "IRRI-9", grainLength: "MEDIUM", brand: "No Brand", salePrice: 120, purchasePrice: 105 },
+    { code: "BSM-1121-EL", name: "Basmati 1121 Extra Long", brand: "Punjab Basmati", salePrice: 280, purchasePrice: 240 },
+    { code: "BSM-386-L", name: "Basmati PK-386 Long", brand: "Punjab Basmati", salePrice: 220, purchasePrice: 190 },
+    { code: "BSM-SK-L", name: "Super Kernel Basmati", brand: "Golden Grain", salePrice: 260, purchasePrice: 225 },
+    { code: "SLL-PSTA-M", name: "Sella Parboiled Medium", brand: "Pak Sella", salePrice: 160, purchasePrice: 140 },
+    { code: "SLL-1121-EL", name: "Sella 1121 Extra Long", brand: "Pak Sella", salePrice: 200, purchasePrice: 175 },
+    { code: "IRRI6-M", name: "IRRI-6 Medium Grain", brand: "Star Rice", salePrice: 110, purchasePrice: 95 },
+    { code: "IRRI9-M", name: "IRRI-9 Medium Grain", brand: "No Brand", salePrice: 120, purchasePrice: 105 },
   ];
 
   for (const p of products) {
@@ -59,7 +59,8 @@ async function main() {
       where: { code: p.code },
       update: {},
       create: {
-        code: p.code, name: p.name, variety: p.variety, grainLength: p.grainLength,
+        code: p.code,
+        name: p.name,
         brandId: createdBrands[p.brand], defaultUnit: "KG",
         salePrice: p.salePrice, purchasePrice: p.purchasePrice,
         lowStockThresholdKg: 200,

@@ -29,7 +29,6 @@ export default async function NewPurchasePage() {
     id: p.id,
     code: p.code,
     name: p.name,
-    variety: p.variety,
     purchasePrice: Number(p.purchasePrice),
     defaultUnit: p.defaultUnit,
   }));

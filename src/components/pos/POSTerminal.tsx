@@ -8,9 +8,14 @@ import { formatCurrency } from "@/lib/utils";
 import { SaleReceipt } from "./SaleReceipt";
 
 interface Product {
-  id: number; code: string; name: string; variety: string;
-  defaultUnit: string; salePrice: number; stockKg: number;
-  lowStockThresholdKg: number; brand?: { name: string } | null;
+  id: number;
+  code: string;
+  name: string;
+  defaultUnit: string;
+  salePrice: number;
+  stockKg: number;
+  lowStockThresholdKg: number;
+  brand?: { name: string } | null;
 }
 interface Customer {
   id: number;
@@ -39,7 +44,7 @@ export function POSTerminal({ products, customers }: Props) {
   const filtered = products.filter((p) => {
     if (!search) return true;
     const q = search.toLowerCase();
-    return p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || p.variety.toLowerCase().includes(q);
+    return p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || (p.brand?.name?.toLowerCase().includes(q) ?? false);
   });
 
   const filteredCustomers = customers.filter((c) =>
@@ -123,7 +128,7 @@ export function POSTerminal({ products, customers }: Props) {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, code or variety..."
+                placeholder="Search by name, code, or brand…"
                 className="w-full pl-9 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               {search && (
@@ -151,7 +156,7 @@ export function POSTerminal({ products, customers }: Props) {
                 >
                   <p className="text-xs text-gray-400 font-mono">{p.code}</p>
                   <p className="text-sm font-semibold text-gray-900 mt-0.5 leading-tight">{p.name}</p>
-                  <p className="text-xs text-gray-500 truncate">{p.variety}{p.brand ? ` • ${p.brand.name}` : ""}</p>
+                  {p.brand ? <p className="text-xs text-gray-500 truncate">{p.brand.name}</p> : null}
                   <div className="mt-2 flex items-center justify-between">
                     <span className="text-sm font-bold text-blue-600">{formatCurrency(p.salePrice)}<span className="text-xs font-normal text-gray-400">/kg</span></span>
                     <span className={`text-xs font-medium ${isOut ? "text-red-600" : isLow ? "text-yellow-600" : "text-green-600"}`}>

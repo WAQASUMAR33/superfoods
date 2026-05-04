@@ -23,6 +23,7 @@ import { prisma } from "@/lib/prisma";
 import { getStockLevels } from "@/lib/inventory";
 import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 import { formatCurrency, formatNumber } from "@/lib/utils";
+import { ProductDeleteButton } from "@/components/products/ProductDeleteButton";
 
 export default async function ProductsPage({
   searchParams,
@@ -42,17 +43,13 @@ export default async function ProductsPage({
           isActive: true,
           ...(q
             ? {
-                OR: [
-                  { name: { contains: q } },
-                  { code: { contains: q } },
-                  { variety: { contains: q } },
-                ],
+                OR: [{ name: { contains: q } }, { code: { contains: q } }],
               }
             : {}),
           ...(brandId && !Number.isNaN(brandId) ? { brandId } : {}),
         },
         include: { brand: true },
-        orderBy: [{ variety: "asc" }, { name: "asc" }],
+        orderBy: [{ name: "asc" }],
       });
       const stockLevels = await getStockLevels(tx);
       return { brands, products, stockLevels };
@@ -106,7 +103,7 @@ export default async function ProductsPage({
           <Suspense fallback={<Box sx={{ height: 96, mb: 2 }} />}>
             <UrlSyncedFilters
               fields={[
-                { key: "q", type: "text", label: "Search", placeholder: "Name, code, variety" },
+                { key: "q", type: "text", label: "Search", placeholder: "Name or code" },
                 {
                   key: "brandId",
                   type: "select",
@@ -135,14 +132,13 @@ export default async function ProductsPage({
                 <TableRow>
                   <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Code</TableCell>
                   <TableCell>Name</TableCell>
-                  <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Variety</TableCell>
                   <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>Brand</TableCell>
                   <TableCell align="right">Sale / Kg</TableCell>
                   <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} align="right">
                     Stock (Kg)
                   </TableCell>
                   <TableCell>Status</TableCell>
-                  <TableCell align="right" width={96} />
+                  <TableCell align="right" width={220} />
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -156,7 +152,6 @@ export default async function ProductsPage({
                         {p.name}
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>{p.variety}</TableCell>
                     <TableCell sx={{ display: { xs: "none", md: "table-cell" } }} color="text.secondary">
                       {p.brand?.name ?? "—"}
                     </TableCell>
@@ -177,17 +172,20 @@ export default async function ProductsPage({
                       />
                     </TableCell>
                     <TableCell align="right">
-                      <Link href={`/products/${p.id}`} prefetch style={{ textDecoration: "none" }}>
-                        <Button size="small" startIcon={<EditIcon sx={{ fontSize: 18 }} />}>
-                          Edit
-                        </Button>
-                      </Link>
+                      <Box sx={{ display: "inline-flex", flexWrap: "wrap", gap: 1, justifyContent: "flex-end" }}>
+                        <Link href={`/products/${p.id}`} prefetch style={{ textDecoration: "none" }}>
+                          <Button size="small" startIcon={<EditIcon sx={{ fontSize: 18 }} />}>
+                            Edit
+                          </Button>
+                        </Link>
+                        <ProductDeleteButton productId={p.id} productName={p.name} />
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
                 {rows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={8}>
+                    <TableCell colSpan={7}>
                       <Typography sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
                         No products match your filters.
                       </Typography>

@@ -289,8 +289,8 @@ export default async function SaleDetailPage({
                                 <Typography variant="body2" sx={{ fontWeight: 600 }}>
                                   {title}
                                 </Typography>
-                                <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                                  {line.product.variety}
+                                <Typography variant="caption" color="text.secondary" sx={{ display: "block", fontFamily: "monospace" }}>
+                                  {line.product.code}
                                 </Typography>
                               </TableCell>
                               <TableCell align="right" sx={{ py: 1.5, verticalAlign: "top", fontVariantNumeric: "tabular-nums" }}>

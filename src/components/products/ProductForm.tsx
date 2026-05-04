@@ -9,6 +9,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ProductSchema, type ProductFormData } from "@/types";
 import { errorMessageFromFetchResponse } from "@/lib/httpErrorMessage";
 
@@ -18,8 +26,6 @@ interface Props {
     id: number;
     code: string;
     name: string;
-    variety: string;
-    grainLength?: string | null;
     brandId?: number | null;
     defaultUnit: string;
     salePrice: unknown;
@@ -33,8 +39,6 @@ function decimalsToForm(product: NonNullable<Props["product"]>): ProductFormData
   return {
     code: product.code,
     name: product.name,
-    variety: product.variety,
-    grainLength: product.grainLength ?? undefined,
     brandId: product.brandId ?? undefined,
     defaultUnit: (["KG", "MAUND", "BAG"].includes(product.defaultUnit) ? product.defaultUnit : "KG") as ProductFormData["defaultUnit"],
     salePrice: Number(product.salePrice),
@@ -48,6 +52,9 @@ export function ProductForm({ brands, product }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
   const isEdit = !!product;
 
   const { register, handleSubmit, control, formState: { errors } } = useForm<ProductFormData>({
@@ -57,8 +64,6 @@ export function ProductForm({ brands, product }: Props) {
       : {
           code: "",
           name: "",
-          variety: "General",
-          grainLength: undefined,
           brandId: undefined,
           defaultUnit: "KG",
           salePrice: 0,
@@ -94,6 +99,26 @@ export function ProductForm({ brands, product }: Props) {
     }
   }
 
+  async function confirmDelete() {
+    if (!product) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await fetch(`/api/products/${product.id}`, { method: "DELETE" });
+      if (res.ok) {
+        setDeleteOpen(false);
+        router.push("/products");
+        router.refresh();
+        return;
+      }
+      setDeleteError(await errorMessageFromFetchResponse(res));
+    } catch {
+      setDeleteError("Network error.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
     <Card>
       <CardHeader><CardTitle>{isEdit ? "Edit Product" : "New Product"}</CardTitle></CardHeader>
@@ -110,17 +135,6 @@ export function ProductForm({ brands, product }: Props) {
               <Input id="name" {...register("name")} placeholder="Product name" className="mt-1" />
               {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name.message}</p>}
             </div>
-          </div>
-
-          <div>
-            <Label htmlFor="variety">Variety</Label>
-            <Input id="variety" {...register("variety")} placeholder="e.g. Basmati, Sella" className="mt-1" />
-            {errors.variety && <p className="mt-1 text-xs text-red-500">{errors.variety.message}</p>}
-          </div>
-
-          <div>
-            <Label htmlFor="grainLength">Grain length (optional)</Label>
-            <Input id="grainLength" {...register("grainLength")} placeholder="e.g. EXTRA_LONG" className="mt-1" />
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -200,13 +214,43 @@ export function ProductForm({ brands, product }: Props) {
 
           {error && <p className="rounded bg-red-50 p-3 text-sm text-red-600">{error}</p>}
 
-          <div className="flex justify-end gap-3 pt-2">
-            <Button type="button" variant="outline" onClick={() => router.push("/products")}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving}>{saving ? "Saving..." : isEdit ? "Update Product" : "Create Product"}</Button>
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            {isEdit ? (
+              <Button type="button" variant="outline" className="border-red-200 text-red-700 hover:bg-red-50" onClick={() => setDeleteOpen(true)}>
+                Delete product
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-3">
+              <Button type="button" variant="outline" onClick={() => router.push("/products")}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving}>{saving ? "Saving..." : isEdit ? "Update Product" : "Create Product"}</Button>
+            </div>
           </div>
         </form>
+
+        <Dialog open={deleteOpen} onOpenChange={(o) => !deleting && setDeleteOpen(o)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Remove this product?</DialogTitle>
+              <DialogDescription>
+                <strong>{product?.name}</strong> will be hidden from product lists and the POS. Historical sales and purchases stay
+                unchanged.
+              </DialogDescription>
+            </DialogHeader>
+            {deleteError ? <p className="text-sm text-red-600">{deleteError}</p> : null}
+            <DialogFooter className="gap-2 sm:gap-0">
+              <Button type="button" variant="outline" onClick={() => setDeleteOpen(false)} disabled={deleting}>
+                Cancel
+              </Button>
+              <Button type="button" className="bg-red-600 hover:bg-red-700" onClick={confirmDelete} disabled={deleting}>
+                {deleting ? "Removing…" : "Remove"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
