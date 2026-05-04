@@ -1,3 +1,4 @@
+import { BRAND_DISPLAY_NAME } from "@/config/branding";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 interface ReceiptItem {
@@ -29,7 +30,7 @@ export function SaleReceipt({ sale }: { sale: ReceiptSale }) {
   return (
     <div className="mx-auto max-w-sm bg-white p-6 font-mono text-sm print:shadow-none shadow-md">
       <div className="text-center mb-4">
-        <h1 className="text-lg font-bold">RICE POS</h1>
+        <h1 className="text-lg font-bold">{BRAND_DISPLAY_NAME}</h1>
         <p className="text-xs text-gray-500">Sales Invoice</p>
         <div className="border-b border-dashed my-2" />
         <p className="text-xs">Invoice: <strong>{sale.invoiceNo}</strong></p>

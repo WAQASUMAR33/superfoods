@@ -8,7 +8,7 @@ import { BRAND_DISPLAY_NAME } from "@/config/branding";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "LASANI FOODS · POS",
+  title: `${BRAND_DISPLAY_NAME} · POS`,
   description: `${BRAND_DISPLAY_NAME} · Inventory & POS Management`,
 };
 

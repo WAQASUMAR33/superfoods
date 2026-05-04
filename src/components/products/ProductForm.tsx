@@ -172,12 +172,12 @@ export function ProductForm({ brands, product }: Props) {
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <Label htmlFor="salePrice">Sale Price / Kg (PKR)</Label>
+              <Label htmlFor="salePrice">Sale Price / Kg (EUR)</Label>
               <Input id="salePrice" type="number" step="0.01" {...register("salePrice", { valueAsNumber: true })} className="mt-1" />
               {errors.salePrice && <p className="mt-1 text-xs text-red-500">{errors.salePrice.message}</p>}
             </div>
             <div>
-              <Label htmlFor="purchasePrice">Purchase Price / Kg (PKR)</Label>
+              <Label htmlFor="purchasePrice">Purchase Price / Kg (EUR)</Label>
               <Input id="purchasePrice" type="number" step="0.01" {...register("purchasePrice", { valueAsNumber: true })} className="mt-1" />
               {errors.purchasePrice && <p className="mt-1 text-xs text-red-500">{errors.purchasePrice.message}</p>}
             </div>

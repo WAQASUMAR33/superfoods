@@ -1,3 +1,4 @@
+import { APP_CURRENCY, APP_LOCALE } from "@/config/locale";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -7,15 +8,15 @@ export function cn(...inputs: ClassValue[]) {
 
 export function formatCurrency(amount: number | string | null | undefined | { toString(): string }): string {
   const num = Number(amount ?? 0);
-  return new Intl.NumberFormat("en-PK", {
+  return new Intl.NumberFormat(APP_LOCALE, {
     style: "currency",
-    currency: "PKR",
+    currency: APP_CURRENCY,
     minimumFractionDigits: 2,
   }).format(num);
 }
 
 export function formatNumber(num: number | string | null | undefined | { toString(): string }, decimals = 2): string {
-  return Number(num ?? 0).toLocaleString("en-PK", {
+  return Number(num ?? 0).toLocaleString(APP_LOCALE, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   });
@@ -23,7 +24,7 @@ export function formatNumber(num: number | string | null | undefined | { toStrin
 
 export function formatDate(date: Date | string | null | undefined): string {
   if (!date) return "-";
-  return new Date(date).toLocaleDateString("en-PK", {
+  return new Date(date).toLocaleDateString(APP_LOCALE, {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -32,7 +33,7 @@ export function formatDate(date: Date | string | null | undefined): string {
 
 export function formatDateTime(date: Date | string | null | undefined): string {
   if (!date) return "-";
-  return new Date(date).toLocaleString("en-PK", {
+  return new Date(date).toLocaleString(APP_LOCALE, {
     day: "2-digit",
     month: "short",
     year: "numeric",

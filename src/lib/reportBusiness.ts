@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
-import { BRAND_DISPLAY_NAME, DEFAULT_BUSINESS_CONTACT } from "@/config/branding";
+import { BRAND_DISPLAY_NAME, DEFAULT_BUSINESS_CONTACT, normalizeLegacyBusinessName } from "@/config/branding";
+import { APP_CURRENCY } from "@/config/locale";
 import { prisma } from "@/lib/prisma";
 
 export type ReportBusinessInfo = {
@@ -44,7 +45,7 @@ export async function getReportBusinessInfo(): Promise<ReportBusinessInfo> {
       create: {
         id: 1,
         businessName: BRAND_DISPLAY_NAME,
-        currency: "PKR",
+        currency: APP_CURRENCY,
         invoicePrefix: "INV",
         purchasePrefix: "PUR",
         lowStockDefaultKg: 200,
@@ -58,7 +59,7 @@ export async function getReportBusinessInfo(): Promise<ReportBusinessInfo> {
     });
 
     return {
-      businessName: row.businessName,
+      businessName: normalizeLegacyBusinessName(row.businessName),
       address: row.address,
       phone: row.phone,
       ntnNumber: row.ntnNumber,

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from "@/config/branding";
 import { useSidebar } from "./SidebarContext";
 
 type NavItem =
@@ -54,11 +55,11 @@ function SidebarInner({ onClose }: { onClose?: () => void }) {
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 flex-shrink-0 overflow-hidden rounded-lg bg-white p-0.5 shadow-lg shadow-[#0099D6]/30">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/amb_logo.png" alt="AMB" className="h-full w-full object-contain" />
+            <img src={BRAND_LOGO_SRC} alt="" className="h-full w-full object-contain" />
           </div>
           <div>
-            <p className="text-sm font-bold leading-none tracking-tight">AMB</p>
-            <p className="mt-0.5 text-[10px] font-medium tracking-wide text-[#0099D6]">Super Foods</p>
+            <p className="text-sm font-bold leading-none tracking-tight">{BRAND_DISPLAY_NAME}</p>
+            <p className="mt-0.5 text-[10px] font-medium tracking-wide text-[#0099D6]">Inventory & POS</p>
           </div>
         </div>
         {onClose && (

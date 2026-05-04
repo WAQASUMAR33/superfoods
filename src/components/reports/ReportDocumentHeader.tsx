@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { BRAND_LOGO_SRC } from "@/config/branding";
 
 /** Dark red — letterhead bars and rules (matches reference) */
 const RED = "#b91c1c";
@@ -34,7 +35,7 @@ export function ReportDocumentHeader({
   docDateText,
   bannerLeft,
   bannerRight,
-  logoSrc,
+  logoSrc = BRAND_LOGO_SRC,
 }: ReportDocumentHeaderProps) {
   const addressLines = company.address
     ?.split(/\r?\n/)
@@ -139,10 +140,12 @@ function CompanyLogoMark() {
       </svg>
       <div className="relative w-full max-w-[4.5rem] text-center">
         <span
-          className="text-[11px] font-black tracking-[0.12em] sm:text-xs"
+          className="text-[9px] font-black leading-tight tracking-[0.08em] sm:text-[10px]"
           style={{ color: blue }}
         >
-          AMB
+          Super
+          <br />
+          Foods
         </span>
         {/* Crossbar emphasis on “A” — extends slightly right like brand mark */}
         <span

@@ -27,7 +27,7 @@ async function main() {
       address: DEFAULT_BUSINESS_CONTACT.address,
       phone: DEFAULT_BUSINESS_CONTACT.phone,
       ntnNumber: DEFAULT_BUSINESS_CONTACT.ntnNumber,
-      currency: "PKR",
+      currency: "EUR",
       invoicePrefix: "INV",
       purchasePrefix: "PUR",
       lowStockDefaultKg: 200,

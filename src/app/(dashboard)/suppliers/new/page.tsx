@@ -89,11 +89,11 @@ export default function NewSupplierPage() {
                     <Input type="number" min="0" value={form.creditTermDays} onChange={(e) => set("creditTermDays", e.target.value)} className="mt-1" />
                   </div>
                   <div>
-                    <Label>Credit Limit (PKR)</Label>
+                    <Label>Credit Limit (EUR)</Label>
                     <Input type="number" min="0" step="0.01" value={form.creditLimit} onChange={(e) => set("creditLimit", e.target.value)} className="mt-1" />
                   </div>
                   <div>
-                    <Label>Opening Balance (PKR)</Label>
+                    <Label>Opening Balance (EUR)</Label>
                     <Input type="number" step="0.01" value={form.openingBalance} onChange={(e) => set("openingBalance", e.target.value)} className="mt-1" />
                   </div>
                 </div>

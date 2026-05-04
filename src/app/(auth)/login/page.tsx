@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { getCsrfToken, getSession, signIn } from "next-auth/react";
 import { Loader2, Eye, EyeOff } from "lucide-react";
-import { BRAND_DISPLAY_NAME } from "@/config/branding";
+import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from "@/config/branding";
 
 /**
  * Where to send the user after sign-in (`?callbackUrl=` from redirects is supported).
@@ -192,10 +192,10 @@ export default function LoginPage() {
         <div className="mb-8 text-center">
           <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl bg-white p-2 shadow-2xl shadow-[#0099D6]/40">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/amb_logo.png" alt="AMB Logo" className="h-full w-full object-contain" />
+            <img src={BRAND_LOGO_SRC} alt="" className="h-full w-full object-contain" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">AMB</h1>
-          <p className="mt-1.5 text-sm font-medium tracking-wide text-[#0099D6]">Super Foods</p>
+          <h1 className="text-3xl font-bold tracking-tight text-white">{BRAND_DISPLAY_NAME}</h1>
+          <p className="mt-1.5 text-sm font-medium tracking-wide text-[#0099D6]">Inventory & POS</p>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-xl">

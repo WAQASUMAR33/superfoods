@@ -1,5 +1,16 @@
-/** Default display name — LASANI FOODS letterhead branding (overridable via Settings → Business). */
-export const BRAND_DISPLAY_NAME = "LASANI FOODS DI MUMTAZ UMAIR" as const;
+/** Default display name (overridable via Settings → Business). */
+export const BRAND_DISPLAY_NAME = "Super Foods" as const;
+
+/** Legacy DB / import values → current brand (reports, settings, receipts). */
+export function normalizeLegacyBusinessName(name: string): string {
+  const t = name.trim();
+  if (!t) return BRAND_DISPLAY_NAME;
+  if (/^rice\s*traders$/i.test(t)) return BRAND_DISPLAY_NAME;
+  return t;
+}
+
+/** Logo served from `/public` (used in shell, login, reports, ledger PDF/print). */
+export const BRAND_LOGO_SRC = "/amb_logo.png" as const;
 
 /** Example letterhead footer lines (Italy); replace in Settings for your locale. */
 export const DEFAULT_BUSINESS_CONTACT = {

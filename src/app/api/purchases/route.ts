@@ -146,8 +146,33 @@ export async function POST(req: NextRequest) {
     }
 
     if (paidAmount > 0 && balanceDue > 0) {
-      await tx.purchasePayment.create({
-        data: { purchaseId: purchase.id, amount: paidAmount, method: data.paymentMethod, reference: data.paymentReference },
+      const pay = await tx.purchasePayment.create({
+        data: {
+          purchaseId: purchase.id,
+          amount: paidAmount,
+          method: data.paymentMethod,
+          reference: data.paymentReference,
+        },
+      });
+      await postJournalEntry(tx as Parameters<typeof postJournalEntry>[0], {
+        description: `Payment at purchase for ${internalRef}`,
+        referenceType: "PAYMENT",
+        referenceId: pay.id,
+        purchaseId: purchase.id,
+        createdById: userId,
+        lines: [
+          { accountId: accounts["2001"], type: "DEBIT", amount: paidAmount, description: "AP - supplier" },
+          { accountId: accounts["1001"], type: "CREDIT", amount: paidAmount, description: "Cash/bank" },
+        ],
+      });
+      await updatePartyLedger(tx as Parameters<typeof updatePartyLedger>[0], {
+        supplierId: data.supplierId,
+        type: "DEBIT",
+        amount: paidAmount,
+        description: `Payment at purchase for ${internalRef}`,
+        referenceType: "PAYMENT",
+        referenceId: pay.id,
+        purchaseId: purchase.id,
       });
     }
 

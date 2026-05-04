@@ -12,8 +12,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;
-  const customerId = Number(id);
-  if (Number.isNaN(customerId)) return NextResponse.json({ error: "Invalid customer id" }, { status: 400 });
+  const supplierId = Number(id);
+  if (Number.isNaN(supplierId)) return NextResponse.json({ error: "Invalid supplier id" }, { status: 400 });
 
   const { searchParams } = new URL(req.url);
   const fromStr = searchParams.get("from")?.trim();
@@ -38,26 +38,26 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "`from` must be on or before `to`." }, { status: 400 });
   }
 
-  const customer = await prisma.customer.findUnique({
-    where: { id: customerId },
+  const supplier = await prisma.supplier.findUnique({
+    where: { id: supplierId },
     select: { id: true, name: true, code: true, openingBalance: true },
   });
-  if (!customer) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
+  if (!supplier) return NextResponse.json({ error: "Supplier not found" }, { status: 404 });
 
   const [entries, business] = await Promise.all([
     prisma.partyLedgerEntry.findMany({
-      where: { customerId, entryDate: { gte: from, lte: to } },
+      where: { supplierId, entryDate: { gte: from, lte: to } },
       orderBy: [{ entryDate: "asc" }, { id: "asc" }],
     }),
     getReportBusinessInfo(),
   ]);
 
   return NextResponse.json({
-    customer: {
-      id: customer.id,
-      name: customer.name,
-      code: customer.code,
-      openingBalance: Number(customer.openingBalance),
+    supplier: {
+      id: supplier.id,
+      name: supplier.name,
+      code: supplier.code,
+      openingBalance: Number(supplier.openingBalance),
     },
     business: {
       businessName: business.businessName,

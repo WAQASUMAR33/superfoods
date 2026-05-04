@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { postJournalEntry, getSystemAccounts, updatePartyLedger } from "@/lib/double-entry";
 import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
+import { formatCurrency } from "@/lib/utils";
 
 const PaymentSchema = z.object({
   amount: z.number().min(0.01),
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const userId = Number((session.user as { id: string }).id);
   const { id } = await params;
   const body = await req.json();
   const parsed = PaymentSchema.safeParse(body);
@@ -25,6 +27,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const purchase = await prisma.purchase.findUnique({ where: { id: Number(id) } });
   if (!purchase) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const balanceDue = Number(purchase.balanceDue);
+  if (parsed.data.amount > balanceDue + 0.005) {
+    return NextResponse.json(
+      { error: `Payment cannot exceed balance due (${formatCurrency(balanceDue)}).` },
+      { status: 400 }
+    );
+  }
 
   const result = await prisma.$transaction(async (tx) => {
     const payment = await tx.purchasePayment.create({
@@ -50,6 +60,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       referenceType: "PAYMENT",
       referenceId: payment.id,
       purchaseId: purchase.id,
+      createdById: userId,
       lines: [
         { accountId: accounts["2001"], type: "DEBIT", amount: parsed.data.amount },
         { accountId: accounts["1001"], type: "CREDIT", amount: parsed.data.amount },

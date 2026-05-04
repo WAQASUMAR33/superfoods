@@ -373,11 +373,11 @@ model Expense {
 
 model BusinessSettings {
   id                Int      @id @default(1)
-  businessName      String   @default("LASANI FOODS DI MUMTAZ UMAIR")
+  businessName      String   @default("Super Foods")
   address           String?  @db.Text
   phone             String?
   ntnNumber         String?
-  currency          String   @default("PKR")
+  currency          String   @default("EUR")
   invoicePrefix     String   @default("INV")
   purchasePrefix    String   @default("PUR")
   lowStockDefaultKg Decimal  @default(200) @db.Decimal(12, 3)

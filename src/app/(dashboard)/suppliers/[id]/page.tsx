@@ -16,48 +16,48 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import PaymentsIcon from "@mui/icons-material/Payments";
+import PaymentIcon from "@mui/icons-material/Payment";
 
 import { Header } from "@/components/layout/Header";
-import { CustomerLedgerPanel } from "@/components/customers/CustomerLedgerPanel";
+import { SupplierLedgerPanel } from "@/components/suppliers/SupplierLedgerPanel";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-export default async function CustomerDetailPage({
+export default async function SupplierDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const customerId = Number(id);
-  if (Number.isNaN(customerId)) notFound();
+  const supplierId = Number(id);
+  if (Number.isNaN(supplierId)) notFound();
 
-  const customer = await prisma.customer.findUnique({
-    where: { id: customerId },
+  const supplier = await prisma.supplier.findUnique({
+    where: { id: supplierId },
     include: {
-      sales: { orderBy: { saleDate: "desc" }, take: 20 },
+      purchases: { orderBy: { purchaseDate: "desc" }, take: 20 },
       ledgerEntries: { orderBy: { entryDate: "desc" }, take: 1 },
     },
   });
-  if (!customer) notFound();
+  if (!supplier) notFound();
 
-  const latestLedger = customer.ledgerEntries[0];
-  const balanceDue = Number(latestLedger?.runningBalance ?? customer.openingBalance);
+  const latestLedger = supplier.ledgerEntries[0];
+  const balanceDue = Number(latestLedger?.runningBalance ?? supplier.openingBalance);
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0, flex: 1 }}>
-      <Header title={`Customer: ${customer.name}`} />
+      <Header title={`Supplier: ${supplier.name}`} />
       <Box sx={{ flex: 1, overflow: "auto", py: { xs: 2, sm: 3 } }}>
         <Container maxWidth="xl">
           <Box sx={{ mb: 2, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5 }}>
-            <Link href="/customers" style={{ textDecoration: "none", display: "inline-flex" }}>
+            <Link href="/suppliers" style={{ textDecoration: "none", display: "inline-flex" }}>
               <Button component="span" startIcon={<ArrowBackIcon />} size="small">
-                Back to Customers
+                Back to Suppliers
               </Button>
             </Link>
-            <Link href={`/customers/${customer.id}/receiving`} style={{ textDecoration: "none", display: "inline-flex" }}>
-              <Button component="span" startIcon={<PaymentsIcon />} size="small" variant="contained">
-                General receipt
+            <Link href={`/suppliers/${supplier.id}/payment`} style={{ textDecoration: "none", display: "inline-flex" }}>
+              <Button component="span" startIcon={<PaymentIcon />} size="small" variant="contained">
+                Record payment
               </Button>
             </Link>
           </Box>
@@ -70,19 +70,19 @@ export default async function CustomerDetailPage({
                     Profile
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Code: {customer.code}
+                    Code: {supplier.code}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Phone: {customer.phone ?? "—"}
+                    Phone: {supplier.phone ?? "—"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    City: {customer.city ?? "—"}
+                    City: {supplier.city ?? "—"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Address: {customer.address ?? "—"}
+                    Address: {supplier.address ?? "—"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Notes: {customer.notes ?? "—"}
+                    Notes: {supplier.notes ?? "—"}
                   </Typography>
                 </CardContent>
               </Card>
@@ -94,13 +94,16 @@ export default async function CustomerDetailPage({
                     Financial
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Credit Limit: {formatCurrency(customer.creditLimit)}
+                    Credit terms: {supplier.creditTermDays} day{supplier.creditTermDays === 1 ? "" : "s"}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Opening Balance: {formatCurrency(customer.openingBalance)}
+                    Credit limit: {formatCurrency(supplier.creditLimit)}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Opening balance: {formatCurrency(supplier.openingBalance)}
                   </Typography>
                   <Typography variant="body2" sx={{ mt: 0.5, fontWeight: 700 }}>
-                    Current Balance Due: {formatCurrency(balanceDue)}
+                    Current balance (payable): {formatCurrency(balanceDue)}
                   </Typography>
                 </CardContent>
               </Card>
@@ -110,7 +113,7 @@ export default async function CustomerDetailPage({
           <Card sx={{ mb: 2 }}>
             <CardContent>
               <Typography variant="h6" sx={{ mb: 1.5 }}>
-                Recent Sales
+                Recent purchases
               </Typography>
               <TableContainer>
                 <Table size="small">
@@ -120,23 +123,23 @@ export default async function CustomerDetailPage({
                       <TableCell>Invoice</TableCell>
                       <TableCell align="right">Total</TableCell>
                       <TableCell align="right">Paid</TableCell>
-                      <TableCell align="right">Credit due</TableCell>
+                      <TableCell align="right">Balance</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {customer.sales.map((s) => (
-                      <TableRow key={s.id}>
-                        <TableCell>{formatDate(s.saleDate)}</TableCell>
-                        <TableCell>{s.invoiceNo}</TableCell>
-                        <TableCell align="right">{formatCurrency(s.totalAmount)}</TableCell>
-                        <TableCell align="right">{formatCurrency(s.paidAmount)}</TableCell>
-                        <TableCell align="right">{formatCurrency(s.creditAmount)}</TableCell>
+                    {supplier.purchases.map((p) => (
+                      <TableRow key={p.id}>
+                        <TableCell>{formatDate(p.purchaseDate)}</TableCell>
+                        <TableCell>{p.invoiceNo}</TableCell>
+                        <TableCell align="right">{formatCurrency(p.totalAmount)}</TableCell>
+                        <TableCell align="right">{formatCurrency(p.paidAmount)}</TableCell>
+                        <TableCell align="right">{formatCurrency(p.balanceDue)}</TableCell>
                       </TableRow>
                     ))}
-                    {customer.sales.length === 0 && (
+                    {supplier.purchases.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={5} sx={{ py: 3, textAlign: "center", color: "text.secondary" }}>
-                          No sales yet.
+                          No purchases yet.
                         </TableCell>
                       </TableRow>
                     )}
@@ -146,11 +149,11 @@ export default async function CustomerDetailPage({
             </CardContent>
           </Card>
 
-          <CustomerLedgerPanel
-            customerId={customer.id}
-            customerName={customer.name}
-            customerCode={customer.code}
-            openingBalance={Number(customer.openingBalance)}
+          <SupplierLedgerPanel
+            supplierId={supplier.id}
+            supplierName={supplier.name}
+            supplierCode={supplier.code}
+            openingBalance={Number(supplier.openingBalance)}
           />
         </Container>
       </Box>

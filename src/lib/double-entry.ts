@@ -104,7 +104,22 @@ export async function updatePartyLedger(
     orderBy: { id: "desc" },
   });
 
-  const prevBalance = Number(last?.runningBalance ?? 0);
+  let prevBalance = 0;
+  if (last) {
+    prevBalance = Number(last.runningBalance);
+  } else if (supplierId != null) {
+    const s = await tx.supplier.findUnique({
+      where: { id: supplierId },
+      select: { openingBalance: true },
+    });
+    prevBalance = Number(s?.openingBalance ?? 0);
+  } else if (customerId != null) {
+    const c = await tx.customer.findUnique({
+      where: { id: customerId },
+      select: { openingBalance: true },
+    });
+    prevBalance = Number(c?.openingBalance ?? 0);
+  }
   const delta = type === "DEBIT" ? amount : -amount;
   const runningBalance = prevBalance + delta;
 

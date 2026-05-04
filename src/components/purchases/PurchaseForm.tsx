@@ -182,7 +182,7 @@ export function PurchaseForm({ suppliers, products }: { suppliers: Supplier[]; p
           <div className="border-t pt-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Label>Discount (PKR)</Label>
+                <Label>Discount (EUR)</Label>
                 <Input type="number" value={form.discount} onChange={(e) => setForm({ ...form, discount: Number(e.target.value) })} className="w-28" />
               </div>
               <div className="text-right">

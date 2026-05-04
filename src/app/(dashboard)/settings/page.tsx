@@ -15,6 +15,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircleOutlined";
 import SearchIcon from "@mui/icons-material/Search";
 
 import { BRAND_DISPLAY_NAME } from "@/config/branding";
+import { APP_CURRENCY } from "@/config/locale";
 import { Header } from "@/components/layout/Header";
 
 interface Settings {
@@ -33,7 +34,7 @@ const DEFAULTS: Settings = {
   address: "",
   phone: "",
   ntnNumber: "",
-  currency: "PKR",
+  currency: APP_CURRENCY,
   invoicePrefix: "INV",
   purchasePrefix: "PUR",
   lowStockDefaultKg: 200,
@@ -55,7 +56,7 @@ export default function SettingsPage() {
           address: data.address ?? "",
           phone: data.phone ?? "",
           ntnNumber: data.ntnNumber ?? "",
-          currency: data.currency ?? "PKR",
+          currency: data.currency ?? APP_CURRENCY,
           invoicePrefix: data.invoicePrefix ?? "INV",
           purchasePrefix: data.purchasePrefix ?? "PUR",
           lowStockDefaultKg: Number(data.lowStockDefaultKg ?? 200),
@@ -155,7 +156,7 @@ export default function SettingsPage() {
                     Invoice defaults
                   </Typography>
                   <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-                    <TextField label="Currency" fullWidth placeholder="PKR" value={form.currency} onChange={(e) => set("currency", e.target.value)} />
+                    <TextField label="Currency" fullWidth placeholder="EUR" value={form.currency} onChange={(e) => set("currency", e.target.value)} />
                     <TextField
                       label="Invoice prefix"
                       required

@@ -2,7 +2,8 @@ export const dynamic = "force-dynamic";
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { BRAND_DISPLAY_NAME } from "@/config/branding";
+import { BRAND_DISPLAY_NAME, normalizeLegacyBusinessName } from "@/config/branding";
+import { APP_CURRENCY } from "@/config/locale";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -11,7 +12,7 @@ const Schema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   ntnNumber: z.string().optional(),
-  currency: z.string().default("PKR"),
+  currency: z.string().default(APP_CURRENCY),
   invoicePrefix: z.string().min(1),
   purchasePrefix: z.string().min(1),
   lowStockDefaultKg: z.number().min(0),
@@ -27,13 +28,16 @@ export async function GET() {
     create: {
       id: 1,
       businessName: BRAND_DISPLAY_NAME,
-      currency: "PKR",
+      currency: APP_CURRENCY,
       invoicePrefix: "INV",
       purchasePrefix: "PUR",
       lowStockDefaultKg: 200,
     },
   });
-  return NextResponse.json(settings);
+  return NextResponse.json({
+    ...settings,
+    businessName: normalizeLegacyBusinessName(settings.businessName),
+  });
 }
 
 export async function PUT(req: NextRequest) {
@@ -44,10 +48,15 @@ export async function PUT(req: NextRequest) {
   const parsed = Schema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+  const data = {
+    ...parsed.data,
+    businessName: normalizeLegacyBusinessName(parsed.data.businessName),
+    lowStockDefaultKg: parsed.data.lowStockDefaultKg,
+  };
   const settings = await prisma.businessSettings.upsert({
     where: { id: 1 },
-    update: { ...parsed.data, lowStockDefaultKg: parsed.data.lowStockDefaultKg },
-    create: { id: 1, ...parsed.data, lowStockDefaultKg: parsed.data.lowStockDefaultKg },
+    update: data,
+    create: { id: 1, ...data },
   });
   return NextResponse.json(settings);
 }

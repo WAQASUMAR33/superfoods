@@ -168,7 +168,7 @@ export default function NewExpensePage() {
                   </div>
                 </div>
                 <div>
-                  <Label>Amount (PKR)</Label>
+                  <Label>Amount (EUR)</Label>
                   <Input
                     type="number"
                     step="0.01"

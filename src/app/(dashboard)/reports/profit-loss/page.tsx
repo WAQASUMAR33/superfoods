@@ -5,6 +5,7 @@ import { ReportExportBar } from "@/components/reports/ReportExportBar";
 import { prisma } from "@/lib/prisma";
 import { rowsToCsv } from "@/lib/csv";
 import { getReportBusinessInfo, formatReportItalianDate } from "@/lib/reportBusiness";
+import { APP_LOCALE } from "@/config/locale";
 import { formatCurrency } from "@/lib/utils";
 
 export default async function ProfitLossPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
@@ -104,8 +105,8 @@ export default async function ProfitLossPage({ searchParams }: { searchParams: P
             <div className="bg-gray-900 px-6 py-4 text-white">
               <h2 className="text-lg font-bold">Profit & Loss Statement</h2>
               <p className="mt-0.5 text-xs text-gray-300">
-                {from.toLocaleDateString("en-PK", { day: "2-digit", month: "short", year: "numeric" })} —{" "}
-                {to.toLocaleDateString("en-PK", { day: "2-digit", month: "short", year: "numeric" })}
+                {from.toLocaleDateString(APP_LOCALE, { day: "2-digit", month: "short", year: "numeric" })} —{" "}
+                {to.toLocaleDateString(APP_LOCALE, { day: "2-digit", month: "short", year: "numeric" })}
               </p>
             </div>
 

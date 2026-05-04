@@ -20,6 +20,7 @@ import InsightsIcon from "@mui/icons-material/Insights";
 import { Header } from "@/components/layout/Header";
 import { UrlSyncedFilters } from "@/components/mui/UrlSyncedFilters";
 import { prisma } from "@/lib/prisma";
+import { APP_LOCALE } from "@/config/locale";
 import { formatCurrency } from "@/lib/utils";
 import { getStockLevels } from "@/lib/inventory";
 import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
@@ -93,7 +94,7 @@ async function getDashboardData(recent?: { q?: string; status?: string }) {
           _sum: { totalAmount: true },
         });
         salesChart.push({
-          date: day.toLocaleDateString("en-PK", { weekday: "short", day: "numeric" }),
+          date: day.toLocaleDateString(APP_LOCALE, { weekday: "short", day: "numeric" }),
           sales: Number(res._sum.totalAmount ?? 0),
         });
       }

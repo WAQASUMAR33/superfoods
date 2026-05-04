@@ -1,6 +1,7 @@
 "use client";
 
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { APP_LOCALE } from "@/config/locale";
 import { formatCurrency } from "@/lib/utils";
 
 interface Props { sales: { date: string; amount: number }[]; }
@@ -11,7 +12,7 @@ export function SalesReportChart({ sales }: Props) {
     byDate[s.date] = (byDate[s.date] ?? 0) + s.amount;
   }
   const data = Object.entries(byDate).sort(([a], [b]) => a.localeCompare(b)).slice(-30).map(([date, amount]) => ({
-    date: new Date(date).toLocaleDateString("en-PK", { month: "short", day: "numeric" }),
+    date: new Date(date).toLocaleDateString(APP_LOCALE, { month: "short", day: "numeric" }),
     amount,
   }));
 

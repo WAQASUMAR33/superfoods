@@ -69,3 +69,33 @@ export async function lastRunningBalancesBySupplierId(
     suppliers.map((s) => [s.id, bySupplier.get(s.id) ?? Number(s.openingBalance)])
   );
 }
+
+/** Current supplier party balance (last ledger row or opening balance). */
+export async function supplierRunningBalanceInTx(tx: TxClient, supplierId: number): Promise<number> {
+  const last = await tx.partyLedgerEntry.findFirst({
+    where: { supplierId },
+    orderBy: { id: "desc" },
+    select: { runningBalance: true },
+  });
+  if (last) return Number(last.runningBalance);
+  const s = await tx.supplier.findUnique({
+    where: { id: supplierId },
+    select: { openingBalance: true },
+  });
+  return Number(s?.openingBalance ?? 0);
+}
+
+/** Current customer party balance (last ledger row or opening balance). */
+export async function customerRunningBalanceInTx(tx: TxClient, customerId: number): Promise<number> {
+  const last = await tx.partyLedgerEntry.findFirst({
+    where: { customerId },
+    orderBy: { id: "desc" },
+    select: { runningBalance: true },
+  });
+  if (last) return Number(last.runningBalance);
+  const c = await tx.customer.findUnique({
+    where: { id: customerId },
+    select: { openingBalance: true },
+  });
+  return Number(c?.openingBalance ?? 0);
+}

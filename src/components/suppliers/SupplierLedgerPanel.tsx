@@ -24,6 +24,7 @@ import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import PrintIcon from "@mui/icons-material/Print";
 import RefreshIcon from "@mui/icons-material/Refresh";
 
+import type { LedgerBusinessInfo } from "@/components/customers/CustomerLedgerPanel";
 import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC, DEFAULT_BUSINESS_CONTACT } from "@/config/branding";
 import { partyLedgerDebitCreditAmounts, partyLedgerPreBalance } from "@/lib/partyLedgerDisplay";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -37,15 +38,8 @@ type LedgerEntry = {
   runningBalance: number;
 };
 
-export type LedgerBusinessInfo = {
-  businessName: string;
-  address: string | null;
-  phone: string | null;
-  ntnNumber: string | null;
-};
-
 type ApiResponse = {
-  customer: { id: number; name: string; code: string; openingBalance: number };
+  supplier: { id: number; name: string; code: string; openingBalance: number };
   business: LedgerBusinessInfo;
   range: { from: string; to: string };
   entries: LedgerEntry[];
@@ -91,7 +85,7 @@ async function loadLogoForPdf(logoPath: string): Promise<{ dataUrl: string; w: n
 }
 
 async function downloadLedgerPdf(
-  customer: { name: string; code: string },
+  party: { name: string; code: string },
   business: LedgerBusinessInfo,
   openingBalance: number,
   fromYmd: string,
@@ -113,7 +107,6 @@ async function downloadLedgerPdf(
     doc.addImage(logo.dataUrl, "PNG", pageW - margin - logoW, 3, logoW, logoH);
   }
 
-  // —— Header band (first page; table may continue on later pages) ——
   doc.setFillColor(...brandDark);
   doc.rect(0, 0, pageW, 8, "F");
   doc.setFillColor(...brandBlue);
@@ -128,17 +121,17 @@ async function downloadLedgerPdf(
   doc.text(titleLines, margin, 16);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8.5);
-  doc.text("Customer party ledger — date range statement", margin, 22 + (titleLines.length - 1) * 4);
+  doc.text("Supplier party ledger — date range statement", margin, 22 + (titleLines.length - 1) * 4);
 
   let y = 32 + (titleLines.length - 1) * 4;
   doc.setTextColor(45, 55, 72);
   doc.setFontSize(10);
   doc.setFont("helvetica", "bold");
-  doc.text(`Customer: ${customer.name}`, margin, y);
+  doc.text(`Supplier: ${party.name}`, margin, y);
   doc.setFont("helvetica", "normal");
   y += 5;
   doc.setFontSize(9);
-  doc.text(`Code: ${customer.code}`, margin, y);
+  doc.text(`Code: ${party.code}`, margin, y);
   y += 4.5;
   doc.text(`Statement period: ${fromYmd}  →  ${toYmd}`, margin, y);
   y += 4.5;
@@ -214,18 +207,18 @@ async function downloadLedgerPdf(
     },
   });
 
-  const safe = `${customer.code}-ledger-${fromYmd}-${toYmd}`.replace(/[\\/:*?"<>|]+/g, "-");
+  const safe = `${party.code}-ledger-${fromYmd}-${toYmd}`.replace(/[\\/:*?"<>|]+/g, "-");
   doc.save(`${safe}.pdf`);
 }
 
 type Props = {
-  customerId: number;
-  customerName: string;
-  customerCode: string;
+  supplierId: number;
+  supplierName: string;
+  supplierCode: string;
   openingBalance: number;
 };
 
-export function CustomerLedgerPanel({ customerId, customerName, customerCode, openingBalance }: Props) {
+export function SupplierLedgerPanel({ supplierId, supplierName, supplierCode, openingBalance }: Props) {
   const today = useMemo(() => new Date(), []);
 
   const [from, setFrom] = useState(() => toYmd(startOfMonth(today)));
@@ -238,14 +231,14 @@ export function CustomerLedgerPanel({ customerId, customerName, customerCode, op
   const printRef = useRef<HTMLDivElement>(null);
   const triggerPrint = useReactToPrint({
     contentRef: printRef,
-    documentTitle: `${customerCode}-ledger-${from}-${to}`.replace(/[\\/:*?"<>|]+/g, "-"),
+    documentTitle: `${supplierCode}-ledger-${from}-${to}`.replace(/[\\/:*?"<>|]+/g, "-"),
   });
 
   const load = useCallback(async () => {
     setError("");
     setLoading(true);
     try {
-      const r = await fetch(`/api/customers/${customerId}/ledger?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
+      const r = await fetch(`/api/suppliers/${supplierId}/ledger?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`);
       const payload = (await r.json()) as ApiResponse | { error?: string };
       if (!r.ok) {
         setData(null);
@@ -259,7 +252,7 @@ export function CustomerLedgerPanel({ customerId, customerName, customerCode, op
     } finally {
       setLoading(false);
     }
-  }, [customerId, from, to]);
+  }, [supplierId, from, to]);
 
   useEffect(() => {
     void load();
@@ -304,14 +297,7 @@ export function CustomerLedgerPanel({ customerId, customerName, customerCode, op
                 size="small"
                 startIcon={<PictureAsPdfIcon />}
                 onClick={() =>
-                  void downloadLedgerPdf(
-                    { name: customerName, code: customerCode },
-                    business,
-                    openingBalance,
-                    from,
-                    to,
-                    entries
-                  )
+                  void downloadLedgerPdf({ name: supplierName, code: supplierCode }, business, openingBalance, from, to, entries)
                 }
                 disabled={loading || !data}
               >
@@ -339,7 +325,7 @@ export function CustomerLedgerPanel({ customerId, customerName, customerCode, op
 
           <Box
             ref={printRef}
-            className="ledger-print-root"
+            className="supplier-ledger-print-root"
             sx={{
               bgcolor: "#fff",
               color: "text.primary",
@@ -354,15 +340,14 @@ export function CustomerLedgerPanel({ customerId, customerName, customerCode, op
               dangerouslySetInnerHTML={{
                 __html: `
                   @media print {
-                    .ledger-print-table thead { display: table-header-group; }
-                    .ledger-print-table { page-break-inside: auto; }
-                    .ledger-print-table tr { page-break-inside: avoid; page-break-after: auto; }
+                    .supplier-ledger-print-table thead { display: table-header-group; }
+                    .supplier-ledger-print-table { page-break-inside: auto; }
+                    .supplier-ledger-print-table tr { page-break-inside: avoid; page-break-after: auto; }
                   }
                 `,
               }}
             />
 
-            {/* —— Print / PDF header —— */}
             <Box
               sx={{
                 border: 1,
@@ -404,7 +389,7 @@ export function CustomerLedgerPanel({ customerId, customerName, customerCode, op
                       {business.businessName}
                     </Typography>
                     <Typography variant="body2" sx={{ opacity: 0.92, mt: 0.5 }}>
-                      Customer party ledger — dated statement
+                      Supplier party ledger — dated statement
                     </Typography>
                   </Box>
                 </Stack>
@@ -414,13 +399,13 @@ export function CustomerLedgerPanel({ customerId, customerName, customerCode, op
                 <Grid container spacing={2}>
                   <Grid size={{ xs: 12, sm: 6 }}>
                     <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: "uppercase" }}>
-                      Customer
+                      Supplier
                     </Typography>
                     <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                      {customerName}
+                      {supplierName}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      Code: {customerCode}
+                      Code: {supplierCode}
                     </Typography>
                   </Grid>
                   <Grid size={{ xs: 12, sm: 6 }}>
@@ -443,7 +428,7 @@ export function CustomerLedgerPanel({ customerId, customerName, customerCode, op
               <TableContainer sx={{ px: 0, overflowX: "auto" }}>
                 <Table
                   size="small"
-                  className="ledger-print-table"
+                  className="supplier-ledger-print-table"
                   sx={{
                     minWidth: 720,
                     "& .MuiTableCell-root": { fontSize: "0.8125rem" },
@@ -521,7 +506,6 @@ export function CustomerLedgerPanel({ customerId, customerName, customerCode, op
                 </Table>
               </TableContainer>
 
-              {/* —— Footer —— */}
               <Box
                 sx={{
                   px: 2.5,
