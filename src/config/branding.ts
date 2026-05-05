@@ -1,5 +1,5 @@
 /** Default display name (overridable via Settings → Business). */
-export const BRAND_DISPLAY_NAME = "Super Foods" as const;
+export const BRAND_DISPLAY_NAME = "LASANI FOODS DI MUMTAZ UMAIR" as const;
 
 /** Legacy DB / import values → current brand (reports, settings, receipts). */
 export function normalizeLegacyBusinessName(name: string): string {
