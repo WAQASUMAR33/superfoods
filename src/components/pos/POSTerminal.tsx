@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Search, X, Plus, Minus, Printer, Check, LayoutGrid, ShoppingBag, MessageCircle } from "lucide-react";
+import { Search, X, Plus, Minus, Printer, Check, LayoutGrid, ShoppingBag, Share2 } from "lucide-react";
+import { toPng } from "html-to-image";
 import { useCart } from "@/hooks/useCart";
 import { Unit, UNIT_OPTIONS, formatDisplay } from "@/lib/units";
 import { formatCurrency } from "@/lib/utils";
@@ -96,36 +97,40 @@ export function POSTerminal({ products, customers }: Props) {
     setMobileTab("products");
   }
 
-  function buildReceiptText(sale: ReceiptSale): string {
-    const lines: string[] = [];
-    lines.push("Sales Receipt");
-    lines.push(`Invoice: ${sale.invoiceNo}`);
-    lines.push(`Date: ${new Date(sale.saleDate).toLocaleString()}`);
-    if (sale.customer?.name) lines.push(`Customer: ${sale.customer.name}`);
-    lines.push("");
-    lines.push("Items:");
-    for (const item of sale.items) {
-      const name = item.productName ?? item.product?.name ?? "Item";
-      lines.push(`- ${name}: ${item.displayQty} ${item.displayUnit} x ${formatCurrency(item.unitPriceKg)} = ${formatCurrency(item.totalAmount)}`);
-    }
-    lines.push("");
-    lines.push(`Subtotal: ${formatCurrency(sale.subtotal)}`);
-    if (Number(sale.discountAmount) > 0) lines.push(`Discount: ${formatCurrency(sale.discountAmount)}`);
-    lines.push(`Total: ${formatCurrency(sale.totalAmount)}`);
-    lines.push(`Paid: ${formatCurrency(sale.paidAmount)} (${sale.paymentMethod})`);
-    if (Number(sale.changeAmount) > 0) lines.push(`Change: ${formatCurrency(sale.changeAmount)}`);
-    if (Number(sale.creditAmount) > 0) lines.push(`Credit Balance: ${formatCurrency(sale.creditAmount)}`);
-    lines.push("");
-    lines.push("Thank you for your business!");
-    return lines.join("\n");
-  }
+  async function handleShareReceiptImage() {
+    if (!lastSale || !receiptRef.current) return;
 
-  function handleShareWhatsApp() {
-    if (!lastSale) return;
-    const sale = lastSale as ReceiptSale;
-    const text = buildReceiptText(sale);
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    try {
+      const sale = lastSale as ReceiptSale;
+      const dataUrl = await toPng(receiptRef.current, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: "#f3f4f6",
+      });
+
+      const response = await fetch(dataUrl);
+      const blob = await response.blob();
+      const file = new File([blob], `receipt-${sale.invoiceNo}.png`, { type: "image/png" });
+
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: `Receipt ${sale.invoiceNo}`,
+          text: `Sales receipt ${sale.invoiceNo}`,
+          files: [file],
+        });
+        return;
+      }
+
+      // Fallback for browsers without file share support.
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `receipt-${sale.invoiceNo}.png`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch {
+      setError("Unable to share receipt image. Please try Print.");
+    }
   }
 
   if (showReceipt && lastSale) {
@@ -138,8 +143,8 @@ export function POSTerminal({ products, customers }: Props) {
           <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded bg-blue-600 px-3 py-1.5 text-sm text-white">
             <Printer className="h-4 w-4" /> Print
           </button>
-          <button onClick={handleShareWhatsApp} className="flex items-center gap-1.5 rounded bg-[#25D366] px-3 py-1.5 text-sm text-white">
-            <MessageCircle className="h-4 w-4" /> WhatsApp
+          <button onClick={handleShareReceiptImage} className="flex items-center gap-1.5 rounded bg-indigo-600 px-3 py-1.5 text-sm text-white">
+            <Share2 className="h-4 w-4" /> Share Receipt
           </button>
           <button onClick={handleNewSale} className="rounded bg-green-600 px-3 py-1.5 text-sm text-white">
             New Sale
