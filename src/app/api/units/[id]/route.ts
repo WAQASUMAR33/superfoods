@@ -77,10 +77,23 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     unit = await prisma.unitDefinition.findUnique({ where: { id: ctx.unitId } });
   } catch (e) {
     if (isUnitStoreUnavailable(e)) {
-      return NextResponse.json(
-        { error: "Unit table is not available yet on this environment. Run database migration first." },
-        { status: 503 }
-      );
+      const fallbacks = fallbackUnits();
+      const target = fallbacks.find((u) => u.id === ctx.unitId);
+      if (!target) return NextResponse.json({ error: "Not found" }, { status: 404 });
+      const replacement = fallbacks.find((u) => u.code !== target.code);
+      if (!replacement) {
+        return NextResponse.json({ error: "Cannot delete the last available fallback unit." }, { status: 409 });
+      }
+      await prisma.product.updateMany({
+        where: { defaultUnit: target.code },
+        data: { defaultUnit: replacement.code },
+      });
+      return NextResponse.json({
+        ok: true,
+        mode: "fallback_reassigned",
+        deletedUnit: target.code,
+        replacementUnit: replacement.code,
+      });
     }
     throw e;
   }
