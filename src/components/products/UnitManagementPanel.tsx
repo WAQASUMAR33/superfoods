@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -82,7 +81,7 @@ export function UnitManagementPanel({ initialUnits }: { initialUnits: UnitRow[] 
       const res = await fetch(`/api/units/${row.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await errorMessageFromFetchResponse(res));
       await refresh();
-      setBanner("Unit removed (or deactivated if in use).");
+      setBanner("Unit deleted.");
     } catch (e) {
       setBanner(e instanceof Error ? e.message : "Could not remove unit.");
     } finally {
@@ -107,7 +106,6 @@ export function UnitManagementPanel({ initialUnits }: { initialUnits: UnitRow[] 
             <TableCell>Code</TableCell>
             <TableCell>Name</TableCell>
             <TableCell align="right">Kg Factor</TableCell>
-            <TableCell>Status</TableCell>
             <TableCell align="right">Actions</TableCell>
           </TableRow>
         </TableHead>
@@ -117,7 +115,6 @@ export function UnitManagementPanel({ initialUnits }: { initialUnits: UnitRow[] 
               <TableCell>{r.code}</TableCell>
               <TableCell>{r.name}</TableCell>
               <TableCell align="right">{Number(r.kgFactor).toFixed(3)}</TableCell>
-              <TableCell><Chip size="small" label={r.isActive ? "Active" : "Inactive"} color={r.isActive ? "success" : "default"} /></TableCell>
               <TableCell align="right">
                 <Button size="small" onClick={() => setEdit({ ...r })}>Edit</Button>
                 <Button size="small" color="error" onClick={() => void removeUnit(r)}>Delete</Button>
@@ -125,7 +122,7 @@ export function UnitManagementPanel({ initialUnits }: { initialUnits: UnitRow[] 
             </TableRow>
           ))}
           {sorted.length === 0 ? (
-            <TableRow><TableCell colSpan={5}><Typography color="text.secondary">No units found.</Typography></TableCell></TableRow>
+            <TableRow><TableCell colSpan={4}><Typography color="text.secondary">No units found.</Typography></TableCell></TableRow>
           ) : null}
         </TableBody>
       </Table>
@@ -136,9 +133,6 @@ export function UnitManagementPanel({ initialUnits }: { initialUnits: UnitRow[] 
           <TextField label="Code" value={edit?.code ?? ""} onChange={(e) => setEdit((p) => (p ? { ...p, code: e.target.value } : p))} />
           <TextField label="Name" value={edit?.name ?? ""} onChange={(e) => setEdit((p) => (p ? { ...p, name: e.target.value } : p))} />
           <TextField label="Kg factor" type="number" value={edit?.kgFactor ?? 1} onChange={(e) => setEdit((p) => (p ? { ...p, kgFactor: Number(e.target.value) } : p))} />
-          <Button variant={edit?.isActive ? "outlined" : "contained"} onClick={() => setEdit((p) => (p ? { ...p, isActive: !p.isActive } : p))}>
-            {edit?.isActive ? "Set Inactive" : "Set Active"}
-          </Button>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEdit(null)}>Cancel</Button>

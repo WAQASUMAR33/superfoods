@@ -11,7 +11,6 @@ const UpdateUnitSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
   kgFactor: z.number().positive(),
-  isActive: z.boolean(),
 });
 
 async function requireAdmin(params: Promise<{ id: string }>) {
@@ -35,19 +34,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   const data = parsed.data;
-  const inUse = await prisma.product.count({ where: { defaultUnit: data.code.trim().toUpperCase(), isActive: true } });
-  if (!data.isActive && inUse > 0) {
-    return NextResponse.json({ error: "Unit is used by active products; reassign products first." }, { status: 409 });
-  }
-
   try {
+    const nextCode = data.code.trim().toUpperCase();
+    const current = await prisma.unitDefinition.findUnique({ where: { id: ctx.unitId } });
+    if (!current) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    if (current.code !== nextCode) {
+      const inUse = await prisma.product.count({ where: { defaultUnit: current.code, isActive: true } });
+      if (inUse > 0) {
+        return NextResponse.json(
+          { error: "Unit code is used by active products. Reassign products before changing the code." },
+          { status: 409 }
+        );
+      }
+    }
     const updated = await prisma.unitDefinition.update({
       where: { id: ctx.unitId },
       data: {
-        code: data.code.trim().toUpperCase(),
+        code: nextCode,
         name: data.name.trim(),
         kgFactor: data.kgFactor,
-        isActive: data.isActive,
       },
     });
     return NextResponse.json(updated);
@@ -65,8 +70,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   const inUse = await prisma.product.count({ where: { defaultUnit: unit.code, isActive: true } });
   if (inUse > 0) {
-    await prisma.unitDefinition.update({ where: { id: ctx.unitId }, data: { isActive: false } });
-    return NextResponse.json({ ok: true, mode: "deactivated" });
+    return NextResponse.json(
+      { error: "Unit is linked to products. Reassign those products first, then delete." },
+      { status: 409 }
+    );
   }
 
   await prisma.unitDefinition.delete({ where: { id: ctx.unitId } });

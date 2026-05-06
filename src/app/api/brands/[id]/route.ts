@@ -9,7 +9,6 @@ import { isAdmin } from "@/lib/roles";
 
 const UpdateBrandSchema = z.object({
   name: z.string().min(1),
-  isActive: z.boolean(),
 });
 
 async function requireAdmin(params: Promise<{ id: string }>) {
@@ -35,7 +34,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const updated = await prisma.brand.update({
       where: { id: ctx.brandId },
-      data: { name: parsed.data.name.trim(), isActive: parsed.data.isActive },
+      data: { name: parsed.data.name.trim() },
     });
     return NextResponse.json(updated);
   } catch (e) {
@@ -50,8 +49,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
 
   const used = await prisma.product.count({ where: { brandId: ctx.brandId } });
   if (used > 0) {
-    await prisma.brand.update({ where: { id: ctx.brandId }, data: { isActive: false } });
-    return NextResponse.json({ ok: true, mode: "deactivated" });
+    return NextResponse.json(
+      { error: "Brand is linked to products. Reassign those products first, then delete." },
+      { status: 409 }
+    );
   }
   await prisma.brand.delete({ where: { id: ctx.brandId } });
   return NextResponse.json({ ok: true, mode: "deleted" });

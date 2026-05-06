@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import Alert from "@mui/material/Alert";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import Chip from "@mui/material/Chip";
 import CircularProgress from "@mui/material/CircularProgress";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
@@ -82,7 +81,7 @@ export function BrandManagementPanel({ initialBrands }: { initialBrands: BrandRo
       const res = await fetch(`/api/brands/${row.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await errorMessageFromFetchResponse(res));
       await refresh();
-      setBanner("Brand removed (or deactivated if in use).");
+      setBanner("Brand deleted.");
     } catch (e) {
       setBanner(e instanceof Error ? e.message : "Could not remove brand.");
     } finally {
@@ -103,7 +102,6 @@ export function BrandManagementPanel({ initialBrands }: { initialBrands: BrandRo
         <TableHead>
           <TableRow>
             <TableCell>Name</TableCell>
-            <TableCell>Status</TableCell>
             <TableCell align="right">Actions</TableCell>
           </TableRow>
         </TableHead>
@@ -111,7 +109,6 @@ export function BrandManagementPanel({ initialBrands }: { initialBrands: BrandRo
           {sorted.map((r) => (
             <TableRow key={r.id}>
               <TableCell>{r.name}</TableCell>
-              <TableCell><Chip size="small" label={r.isActive ? "Active" : "Inactive"} color={r.isActive ? "success" : "default"} /></TableCell>
               <TableCell align="right">
                 <Button size="small" onClick={() => setEdit({ ...r })}>Edit</Button>
                 <Button size="small" color="error" onClick={() => void removeBrand(r)}>Delete</Button>
@@ -119,7 +116,7 @@ export function BrandManagementPanel({ initialBrands }: { initialBrands: BrandRo
             </TableRow>
           ))}
           {sorted.length === 0 ? (
-            <TableRow><TableCell colSpan={3}><Typography color="text.secondary">No brands found.</Typography></TableCell></TableRow>
+            <TableRow><TableCell colSpan={2}><Typography color="text.secondary">No brands found.</Typography></TableCell></TableRow>
           ) : null}
         </TableBody>
       </Table>
@@ -128,12 +125,6 @@ export function BrandManagementPanel({ initialBrands }: { initialBrands: BrandRo
         <DialogTitle>Edit brand</DialogTitle>
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: "12px!important" }}>
           <TextField label="Name" value={edit?.name ?? ""} onChange={(e) => setEdit((p) => (p ? { ...p, name: e.target.value } : p))} />
-          <Button
-            variant={edit?.isActive ? "outlined" : "contained"}
-            onClick={() => setEdit((p) => (p ? { ...p, isActive: !p.isActive } : p))}
-          >
-            {edit?.isActive ? "Set Inactive" : "Set Active"}
-          </Button>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setEdit(null)}>Cancel</Button>

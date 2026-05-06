@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ProductSchema } from "@/types";
+import { isUnitAllowed } from "@/lib/unitDefinitions";
 
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -42,11 +43,8 @@ export async function POST(req: NextRequest) {
 
   const d = parsed.data;
   try {
-    const unit = await prisma.unitDefinition.findFirst({
-      where: { code: d.defaultUnit, isActive: true },
-      select: { id: true },
-    });
-    if (!unit) {
+    const unitAllowed = await isUnitAllowed(d.defaultUnit);
+    if (!unitAllowed) {
       return NextResponse.json({ error: "Invalid default unit. Choose an active unit from Unit Management." }, { status: 400 });
     }
     const product = await prisma.product.create({
