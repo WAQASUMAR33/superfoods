@@ -14,6 +14,10 @@ function isMissingUnitTable(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2021";
 }
 
+export function isMissingUnitTableError(error: unknown): boolean {
+  return isMissingUnitTable(error);
+}
+
 export function fallbackUnits(): AppUnitDefinition[] {
   return UNIT_OPTIONS.map((u, idx) => ({
     id: idx + 1,

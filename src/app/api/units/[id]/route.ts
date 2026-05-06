@@ -6,6 +6,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/roles";
+import { isMissingUnitTableError } from "@/lib/unitDefinitions";
 
 const UpdateUnitSchema = z.object({
   code: z.string().min(1),
@@ -57,6 +58,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     });
     return NextResponse.json(updated);
   } catch (e) {
+    if (isMissingUnitTableError(e)) {
+      return NextResponse.json(
+        { error: "Unit table is not available yet on this environment. Run database migration first." },
+        { status: 503 }
+      );
+    }
     const msg = e instanceof Error ? e.message : "Could not update unit";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
@@ -65,7 +72,18 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await requireAdmin(params);
   if ("response" in ctx) return ctx.response;
-  const unit = await prisma.unitDefinition.findUnique({ where: { id: ctx.unitId } });
+  let unit;
+  try {
+    unit = await prisma.unitDefinition.findUnique({ where: { id: ctx.unitId } });
+  } catch (e) {
+    if (isMissingUnitTableError(e)) {
+      return NextResponse.json(
+        { error: "Unit table is not available yet on this environment. Run database migration first." },
+        { status: 503 }
+      );
+    }
+    throw e;
+  }
   if (!unit) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const inUse = await prisma.product.count({ where: { defaultUnit: unit.code, isActive: true } });

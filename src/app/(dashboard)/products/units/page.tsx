@@ -6,11 +6,12 @@ import Button from "@mui/material/Button";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 import { Header } from "@/components/layout/Header";
-import { prisma } from "@/lib/prisma";
+import Alert from "@mui/material/Alert";
 import { UnitManagementPanel } from "@/components/products/UnitManagementPanel";
+import { getActiveUnitsOrFallback } from "@/lib/unitDefinitions";
 
 export default async function ProductUnitManagementPage() {
-  const units = await prisma.unitDefinition.findMany({ orderBy: { code: "asc" } });
+  const units = await getActiveUnitsOrFallback();
   return (
     <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0, flex: 1 }}>
       <Header title="Unit Management" />
@@ -22,12 +23,15 @@ export default async function ProductUnitManagementPage() {
               <Button variant="outlined">Back to products</Button>
             </Link>
           </Box>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            If you cannot create/edit/delete units, run database migration on this environment.
+          </Alert>
           <UnitManagementPanel
             initialUnits={units.map((u) => ({
               id: u.id,
               code: u.code,
               name: u.name,
-              kgFactor: Number(u.kgFactor),
+              kgFactor: u.kgFactor,
               isActive: u.isActive,
             }))}
           />

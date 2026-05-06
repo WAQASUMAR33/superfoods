@@ -6,6 +6,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/roles";
+import { fallbackUnits, isMissingUnitTableError } from "@/lib/unitDefinitions";
 
 const CreateUnitSchema = z.object({
   code: z.string().min(1),
@@ -16,8 +17,15 @@ const CreateUnitSchema = z.object({
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  const units = await prisma.unitDefinition.findMany({ orderBy: { code: "asc" } });
-  return NextResponse.json(units);
+  try {
+    const units = await prisma.unitDefinition.findMany({ orderBy: { code: "asc" } });
+    return NextResponse.json(units);
+  } catch (error) {
+    if (isMissingUnitTableError(error)) {
+      return NextResponse.json(fallbackUnits());
+    }
+    throw error;
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -42,6 +50,12 @@ export async function POST(req: NextRequest) {
     });
     return NextResponse.json(unit, { status: 201 });
   } catch (e) {
+    if (isMissingUnitTableError(e)) {
+      return NextResponse.json(
+        { error: "Unit table is not available yet on this environment. Run database migration first." },
+        { status: 503 }
+      );
+    }
     const msg = e instanceof Error ? e.message : "Could not create unit";
     return NextResponse.json({ error: msg }, { status: 500 });
   }
