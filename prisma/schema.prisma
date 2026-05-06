@@ -35,6 +35,18 @@ model Brand {
   @@map("brands")
 }
 
+model UnitDefinition {
+  id       Int      @id @default(autoincrement())
+  code     String   @unique
+  name     String
+  kgFactor Decimal  @default(1) @db.Decimal(12, 3)
+  isActive Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("unit_definitions")
+}
+
 model Product {
   id                  Int      @id @default(autoincrement())
   code                String   @unique

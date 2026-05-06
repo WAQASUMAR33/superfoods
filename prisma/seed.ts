@@ -43,6 +43,21 @@ async function main() {
   }
   console.log("✓ Brands seeded");
 
+  // Units
+  const units = [
+    { code: "KG", name: "Kilograms", kgFactor: 1 },
+    { code: "MAUND", name: "Maunds", kgFactor: 40 },
+    { code: "BAG", name: "Bags", kgFactor: 50 },
+  ];
+  for (const u of units) {
+    await prisma.unitDefinition.upsert({
+      where: { code: u.code },
+      update: { name: u.name, kgFactor: u.kgFactor, isActive: true },
+      create: u,
+    });
+  }
+  console.log("✓ Units seeded");
+
   // Products
   const products = [
     { code: "BSM-1121-EL", name: "Basmati 1121 Extra Long", brand: "Punjab Basmati", salePrice: 280, purchasePrice: 240 },

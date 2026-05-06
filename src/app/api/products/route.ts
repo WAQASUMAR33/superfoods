@@ -42,6 +42,13 @@ export async function POST(req: NextRequest) {
 
   const d = parsed.data;
   try {
+    const unit = await prisma.unitDefinition.findFirst({
+      where: { code: d.defaultUnit, isActive: true },
+      select: { id: true },
+    });
+    if (!unit) {
+      return NextResponse.json({ error: "Invalid default unit. Choose an active unit from Unit Management." }, { status: 400 });
+    }
     const product = await prisma.product.create({
       data: {
         code: d.code,

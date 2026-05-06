@@ -93,11 +93,19 @@ export default async function ProductsPage({
             <Typography variant="body2" color="text.secondary">
               {rows.length} product{rows.length === 1 ? "" : "s"} (filtered)
             </Typography>
-            <Link href="/products/new" prefetch style={{ textDecoration: "none" }}>
-              <Button variant="contained" startIcon={<AddIcon />}>
-                Add Product
-              </Button>
-            </Link>
+            <Box sx={{ display: "inline-flex", gap: 1, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <Link href="/products/brands" prefetch style={{ textDecoration: "none" }}>
+                <Button variant="outlined">Manage Brands</Button>
+              </Link>
+              <Link href="/products/units" prefetch style={{ textDecoration: "none" }}>
+                <Button variant="outlined">Manage Units</Button>
+              </Link>
+              <Link href="/products/new" prefetch style={{ textDecoration: "none" }}>
+                <Button variant="contained" startIcon={<AddIcon />}>
+                  Add Product
+                </Button>
+              </Link>
+            </Box>
           </Box>
 
           <Suspense fallback={<Box sx={{ height: 96, mb: 2 }} />}>

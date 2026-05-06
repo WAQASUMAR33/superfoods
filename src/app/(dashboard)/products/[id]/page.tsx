@@ -10,18 +10,19 @@ import { notFound } from "next/navigation";
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const productId = Number(id);
-  const { product, brands, stockKg } = await prisma.$transaction(
+  const { product, brands, units, stockKg } = await prisma.$transaction(
     async (tx) => {
       const product = await tx.product.findUnique({
         where: { id: productId },
         include: { brand: true, stockMovements: { orderBy: { movedAt: "desc" }, take: 30 } },
       });
       const brands = await tx.brand.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+      const units = await tx.unitDefinition.findMany({ where: { isActive: true }, orderBy: { code: "asc" } });
       if (!product) {
-        return { product: null, brands, stockKg: 0 };
+        return { product: null, brands, units, stockKg: 0 };
       }
       const stockKg = await getStockLevel(tx, product.id);
-      return { product, brands, stockKg };
+      return { product, brands, units, stockKg };
     },
     interactiveTransactionOptions
   );
@@ -33,7 +34,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       <Header title={`Edit: ${product.name}`} />
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
         <div className="mx-auto max-w-2xl">
-          <ProductForm key={product.id} brands={brands} product={product} />
+          <ProductForm
+            key={product.id}
+            brands={brands}
+            units={units.map((u) => ({ id: u.id, code: u.code, name: u.name, kgFactor: Number(u.kgFactor) }))}
+            product={product}
+          />
         </div>
 
         <div className="mx-auto max-w-2xl">

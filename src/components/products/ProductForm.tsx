@@ -22,6 +22,7 @@ import { errorMessageFromFetchResponse } from "@/lib/httpErrorMessage";
 
 interface Props {
   brands: { id: number; name: string }[];
+  units: { id: number; code: string; name: string; kgFactor: number }[];
   product?: {
     id: number;
     code: string;
@@ -40,7 +41,7 @@ function decimalsToForm(product: NonNullable<Props["product"]>): ProductFormData
     code: product.code,
     name: product.name,
     brandId: product.brandId ?? undefined,
-    defaultUnit: (["KG", "MAUND", "BAG"].includes(product.defaultUnit) ? product.defaultUnit : "KG") as ProductFormData["defaultUnit"],
+    defaultUnit: product.defaultUnit || "KG",
     salePrice: Number(product.salePrice),
     purchasePrice: Number(product.purchasePrice),
     lowStockThresholdKg: Number(product.lowStockThresholdKg),
@@ -48,7 +49,7 @@ function decimalsToForm(product: NonNullable<Props["product"]>): ProductFormData
   };
 }
 
-export function ProductForm({ brands, product }: Props) {
+export function ProductForm({ brands, units, product }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -174,9 +175,11 @@ export function ProductForm({ brands, product }: Props) {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="KG">Kilograms (Kg)</SelectItem>
-                      <SelectItem value="MAUND">Maunds (40 Kg)</SelectItem>
-                      <SelectItem value="BAG">Bags (50 Kg)</SelectItem>
+                      {units.map((u) => (
+                        <SelectItem key={u.id} value={u.code}>
+                          {u.name} ({u.code}) · {Number(u.kgFactor).toFixed(3)} Kg
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 )}

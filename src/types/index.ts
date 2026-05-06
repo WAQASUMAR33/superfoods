@@ -7,7 +7,7 @@ export const ProductSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
   brandId: z.number().optional(),
-  defaultUnit: z.enum(["KG", "MAUND", "BAG"]),
+  defaultUnit: z.string().min(1),
   salePrice: z.number().min(0),
   purchasePrice: z.number().min(0),
   lowStockThresholdKg: z.number().min(0),
