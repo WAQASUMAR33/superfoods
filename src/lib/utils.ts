@@ -1,4 +1,4 @@
-import { APP_CURRENCY, APP_CURRENCY_LOCALE, APP_LOCALE } from "@/config/locale";
+import { APP_LOCALE } from "@/config/locale";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -21,32 +21,28 @@ export function toFiniteNumber(amount: number | string | null | undefined | { to
   return NaN;
 }
 
-/** On-screen and API messages: EUR with consistent grouping (see APP_CURRENCY_LOCALE). */
+/** On-screen money values without currency sign. */
 export function formatCurrency(amount: number | string | null | undefined | { toString(): string }): string {
   const num = toFiniteNumber(amount);
   if (!Number.isFinite(num)) return "—";
-  return new Intl.NumberFormat(APP_CURRENCY_LOCALE, {
-    style: "currency",
-    currency: APP_CURRENCY,
+  return new Intl.NumberFormat(APP_LOCALE, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(num);
 }
 
-/** jsPDF / Helvetica-safe money (ASCII only; no € glyph). */
+/** jsPDF-safe plain amount without currency sign. */
 export function formatCurrencyAscii(amount: number | string | null | undefined | { toString(): string }): string {
   const num = toFiniteNumber(amount);
   if (!Number.isFinite(num)) return "—";
-  return `${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} EUR`;
+  return num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-/** Chart axes and compact summaries (e.g. €1.2K). */
+/** Chart axes and compact summaries without currency sign (e.g. 1.2K). */
 export function formatCurrencyCompact(value: number | string | null | undefined): string {
   const num = toFiniteNumber(value);
   if (!Number.isFinite(num)) return "—";
-  return new Intl.NumberFormat(APP_CURRENCY_LOCALE, {
-    style: "currency",
-    currency: APP_CURRENCY,
+  return new Intl.NumberFormat(APP_LOCALE, {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(num);

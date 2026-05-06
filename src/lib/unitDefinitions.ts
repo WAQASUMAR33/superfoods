@@ -18,6 +18,17 @@ export function isMissingUnitTableError(error: unknown): boolean {
   return isMissingUnitTable(error);
 }
 
+function hasUnitDelegate(): boolean {
+  return typeof (prisma as unknown as { unitDefinition?: unknown }).unitDefinition === "object";
+}
+
+export function isUnitStoreUnavailable(error: unknown): boolean {
+  if (isMissingUnitTable(error)) return true;
+  if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2022") return true;
+  if (error instanceof TypeError && /unitDefinition/i.test(error.message)) return true;
+  return false;
+}
+
 export function fallbackUnits(): AppUnitDefinition[] {
   return UNIT_OPTIONS.map((u, idx) => ({
     id: idx + 1,
@@ -29,6 +40,7 @@ export function fallbackUnits(): AppUnitDefinition[] {
 }
 
 export async function getActiveUnitsOrFallback(): Promise<AppUnitDefinition[]> {
+  if (!hasUnitDelegate()) return fallbackUnits();
   try {
     const units = await prisma.unitDefinition.findMany({
       where: { isActive: true },
@@ -44,7 +56,7 @@ export async function getActiveUnitsOrFallback(): Promise<AppUnitDefinition[]> {
       }));
     }
   } catch (error) {
-    if (!isMissingUnitTable(error)) throw error;
+    if (!isUnitStoreUnavailable(error)) throw error;
   }
   return fallbackUnits();
 }
@@ -52,6 +64,7 @@ export async function getActiveUnitsOrFallback(): Promise<AppUnitDefinition[]> {
 export async function isUnitAllowed(code: string): Promise<boolean> {
   const normalized = code.trim().toUpperCase();
   if (!normalized) return false;
+  if (!hasUnitDelegate()) return fallbackUnits().some((u) => u.code === normalized);
   try {
     const row = await prisma.unitDefinition.findFirst({
       where: { code: normalized, isActive: true },
@@ -59,7 +72,7 @@ export async function isUnitAllowed(code: string): Promise<boolean> {
     });
     return !!row;
   } catch (error) {
-    if (!isMissingUnitTable(error)) throw error;
+    if (!isUnitStoreUnavailable(error)) throw error;
     return fallbackUnits().some((u) => u.code === normalized);
   }
 }

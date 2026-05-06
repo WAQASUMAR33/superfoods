@@ -6,7 +6,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/roles";
-import { isMissingUnitTableError } from "@/lib/unitDefinitions";
+import { isUnitStoreUnavailable } from "@/lib/unitDefinitions";
 
 const UpdateUnitSchema = z.object({
   code: z.string().min(1),
@@ -58,7 +58,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     });
     return NextResponse.json(updated);
   } catch (e) {
-    if (isMissingUnitTableError(e)) {
+    if (isUnitStoreUnavailable(e)) {
       return NextResponse.json(
         { error: "Unit table is not available yet on this environment. Run database migration first." },
         { status: 503 }
@@ -76,7 +76,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   try {
     unit = await prisma.unitDefinition.findUnique({ where: { id: ctx.unitId } });
   } catch (e) {
-    if (isMissingUnitTableError(e)) {
+    if (isUnitStoreUnavailable(e)) {
       return NextResponse.json(
         { error: "Unit table is not available yet on this environment. Run database migration first." },
         { status: 503 }
