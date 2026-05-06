@@ -81,7 +81,7 @@ export function UnitManagementPanel({ initialUnits }: { initialUnits: UnitRow[] 
       const res = await fetch(`/api/units/${row.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await errorMessageFromFetchResponse(res));
       await refresh();
-      setBanner("Unit deleted.");
+      setBanner("Unit deleted and products were reassigned automatically.");
     } catch (e) {
       setBanner(e instanceof Error ? e.message : "Could not remove unit.");
     } finally {

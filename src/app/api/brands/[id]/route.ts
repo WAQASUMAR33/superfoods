@@ -46,14 +46,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const ctx = await requireAdmin(params);
   if ("response" in ctx) return ctx.response;
+  const existing = await prisma.brand.findUnique({ where: { id: ctx.brandId }, select: { id: true } });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const used = await prisma.product.count({ where: { brandId: ctx.brandId } });
-  if (used > 0) {
-    return NextResponse.json(
-      { error: "Brand is linked to products. Reassign those products first, then delete." },
-      { status: 409 }
-    );
-  }
-  await prisma.brand.delete({ where: { id: ctx.brandId } });
-  return NextResponse.json({ ok: true, mode: "deleted" });
+  await prisma.$transaction(async (tx) => {
+    await tx.product.updateMany({ where: { brandId: ctx.brandId }, data: { brandId: null } });
+    await tx.brand.delete({ where: { id: ctx.brandId } });
+  });
+  return NextResponse.json({ ok: true, mode: "deleted_and_detached_products" });
 }

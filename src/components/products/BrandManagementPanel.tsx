@@ -81,7 +81,7 @@ export function BrandManagementPanel({ initialBrands }: { initialBrands: BrandRo
       const res = await fetch(`/api/brands/${row.id}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await errorMessageFromFetchResponse(res));
       await refresh();
-      setBanner("Brand deleted.");
+      setBanner("Brand deleted and detached from products.");
     } catch (e) {
       setBanner(e instanceof Error ? e.message : "Could not remove brand.");
     } finally {

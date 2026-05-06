@@ -6,7 +6,7 @@ import { z } from "zod";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isAdmin } from "@/lib/roles";
-import { isUnitStoreUnavailable } from "@/lib/unitDefinitions";
+import { fallbackUnits, isUnitStoreUnavailable } from "@/lib/unitDefinitions";
 
 const UpdateUnitSchema = z.object({
   code: z.string().min(1),
@@ -85,15 +85,46 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     throw e;
   }
   if (!unit) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  try {
+    const preferred = await prisma.unitDefinition.findFirst({
+      where: { isActive: true, id: { not: ctx.unitId }, code: "KG" },
+      select: { code: true },
+    });
+    const anyOther = preferred
+      ? null
+      : await prisma.unitDefinition.findFirst({
+          where: { isActive: true, id: { not: ctx.unitId } },
+          orderBy: { code: "asc" },
+          select: { code: true },
+        });
+    const replacementCode = preferred?.code ?? anyOther?.code;
 
-  const inUse = await prisma.product.count({ where: { defaultUnit: unit.code, isActive: true } });
-  if (inUse > 0) {
-    return NextResponse.json(
-      { error: "Unit is linked to products. Reassign those products first, then delete." },
-      { status: 409 }
-    );
+    if (!replacementCode) {
+      const fallback = fallbackUnits().find((u) => u.code !== unit.code) ?? fallbackUnits()[0];
+      if (!fallback) {
+        return NextResponse.json(
+          { error: "Cannot delete the last available unit. Create another unit first." },
+          { status: 409 }
+        );
+      }
+      await prisma.product.updateMany({ where: { defaultUnit: unit.code }, data: { defaultUnit: fallback.code } });
+      await prisma.unitDefinition.delete({ where: { id: ctx.unitId } });
+      return NextResponse.json({ ok: true, mode: "deleted_and_reassigned", replacementUnit: fallback.code });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.product.updateMany({ where: { defaultUnit: unit.code }, data: { defaultUnit: replacementCode } });
+      await tx.unitDefinition.delete({ where: { id: ctx.unitId } });
+    });
+    return NextResponse.json({ ok: true, mode: "deleted_and_reassigned", replacementUnit: replacementCode });
+  } catch (e) {
+    if (isUnitStoreUnavailable(e)) {
+      return NextResponse.json(
+        { error: "Unit table is not available yet on this environment. Run database migration first." },
+        { status: 503 }
+      );
+    }
+    const msg = e instanceof Error ? e.message : "Could not delete unit";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
-
-  await prisma.unitDefinition.delete({ where: { id: ctx.unitId } });
-  return NextResponse.json({ ok: true, mode: "deleted" });
 }
