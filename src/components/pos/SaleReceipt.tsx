@@ -1,4 +1,4 @@
-import { BRAND_DISPLAY_NAME } from "@/config/branding";
+import { BRAND_DISPLAY_NAME, BRAND_LOGO_SRC } from "@/config/branding";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 interface ReceiptItem {
@@ -12,7 +12,7 @@ interface ReceiptItem {
   totalAmount: number;
 }
 
-interface ReceiptSale {
+export interface ReceiptSale {
   invoiceNo: string;
   saleDate: string;
   customer?: { name: string; phone?: string | null } | null;
@@ -30,6 +30,11 @@ export function SaleReceipt({ sale }: { sale: ReceiptSale }) {
   return (
     <div className="mx-auto max-w-sm bg-white p-6 font-mono text-sm print:shadow-none shadow-md">
       <div className="text-center mb-4">
+        <img
+          src={BRAND_LOGO_SRC}
+          alt={`${BRAND_DISPLAY_NAME} logo`}
+          className="mx-auto mb-2 h-10 w-auto object-contain"
+        />
         <h1 className="text-lg font-bold">{BRAND_DISPLAY_NAME}</h1>
         <p className="text-xs text-gray-500">Sales Invoice</p>
         <div className="border-b border-dashed my-2" />
