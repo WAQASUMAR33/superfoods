@@ -49,7 +49,7 @@ export function SaleReceipt({ sale }: { sale: ReceiptSale }) {
                 <span className="text-xs font-medium ml-2">{formatCurrency(item.totalAmount)}</span>
               </div>
               <div className="text-xs text-gray-400 pl-2">
-                {item.displayQty} {item.displayUnit} ({Number(item.quantityKg).toFixed(2)} Kg) × {formatCurrency(item.unitPriceKg)}/Kg
+                {item.displayQty} {item.displayUnit} × {formatCurrency(item.unitPriceKg)}/unit
                 {item.discount > 0 && ` (${item.discount}% off)`}
               </div>
             </div>

@@ -13,7 +13,7 @@ const initialState: CartState = {
 };
 
 function calcLineTotal(item: CartItem): number {
-  return item.quantityKg * item.unitPriceKg * (1 - item.discount / 100);
+  return item.displayQty * item.unitPriceKg * (1 - item.discount / 100);
 }
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -38,7 +38,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         quantityKg: toKg(1, defaultUnit),
         unitPriceKg: action.product.salePrice,
         discount: 0,
-        lineTotal: toKg(1, defaultUnit) * action.product.salePrice,
+        lineTotal: 1 * action.product.salePrice,
         stockKg: action.product.stockKg,
       };
       return { ...state, items: [...state.items, newItem] };

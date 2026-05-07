@@ -197,7 +197,7 @@ export function POSTerminal({ products, customers }: Props) {
                   <div className="mt-2 flex items-center justify-between">
                     <span className="text-sm font-bold text-blue-600">{formatCurrency(p.salePrice)}<span className="text-xs font-normal text-gray-400">/unit</span></span>
                     <span className={`text-xs font-medium ${isOut ? "text-red-600" : isLow ? "text-yellow-600" : "text-green-600"}`}>
-                      {isOut ? "OUT" : formatDisplay(p.stockKg, "KG")}
+                      {isOut ? "OUT" : formatDisplay(p.stockKg, p.defaultUnit as Unit)}
                     </span>
                   </div>
                 </button>
@@ -282,7 +282,7 @@ export function POSTerminal({ products, customers }: Props) {
                       className="px-2 py-0.5 hover:bg-gray-100"><Plus className="h-3 w-3" /></button>
                   </div>
 
-                  <span className="text-xs text-gray-400">{item.quantityKg.toFixed(2)} Kg</span>
+                  <span className="text-xs text-gray-400">{item.displayQty.toFixed(2)} {item.displayUnit}</span>
                 </div>
 
                 <div className="mt-2 grid grid-cols-2 gap-2">

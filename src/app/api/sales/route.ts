@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
           throw new Error(`Insufficient stock for product #${item.productId}. Available: ${stockKg.toFixed(2)} Kg`);
         }
 
-        const lineTotal = quantityKg * item.unitPriceKg * (1 - item.discount / 100);
+        // POS sends item rate per selected display unit.
+        const lineTotal = item.displayQty * item.unitPriceKg * (1 - item.discount / 100);
         subtotal += lineTotal;
         return { ...item, quantityKg, lineTotal };
       })
