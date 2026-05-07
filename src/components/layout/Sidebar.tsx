@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Package, ShoppingCart, Users, Truck, BarChart3,
-  DollarSign, Receipt, Wallet, Settings, LogOut, Wheat, TrendingUp, X, Tag, UserRoundCog,
+  DollarSign, Receipt, Wallet, Settings, LogOut, Wheat, TrendingUp, X, Tag, UserRoundCog, Undo2,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
@@ -24,9 +24,11 @@ const NAV_BASE: NavItem[] = [
   { label: "Stock Levels", href: "/stock", icon: Package },
   { divider: true, label: "Procurement" },
   { label: "Purchases", href: "/purchases", icon: Truck },
+  { label: "Purchase returns", href: "/purchases/returns", icon: Undo2 },
   { label: "Suppliers", href: "/suppliers", icon: Users },
   { divider: true, label: "Sales" },
   { label: "Sales History", href: "/sales", icon: Receipt },
+  { label: "Sale returns", href: "/sales/returns", icon: Undo2 },
   { label: "Customers", href: "/customers", icon: Users },
   { divider: true, label: "Finance" },
   { label: "Accounts", href: "/accounts", icon: DollarSign },

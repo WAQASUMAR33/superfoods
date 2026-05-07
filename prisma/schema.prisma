@@ -21,7 +21,9 @@ model User {
   sales        Sale[]
   purchases    Purchase[]
   adjustments  StockAdjustment[]
-  journalLines JournalLine[]
+  journalLines        JournalLine[]
+  saleReturns         SaleReturn[]
+  purchaseReturns     PurchaseReturn[]
 
   @@map("users")
 }
@@ -61,11 +63,13 @@ model Product {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  brand          Brand?            @relation(fields: [brandId], references: [id])
-  stockMovements StockMovement[]
-  saleItems      SaleItem[]
-  purchaseItems  PurchaseItem[]
-  adjustments    StockAdjustment[]
+  brand               Brand?                 @relation(fields: [brandId], references: [id])
+  stockMovements      StockMovement[]
+  saleItems           SaleItem[]
+  purchaseItems       PurchaseItem[]
+  adjustments         StockAdjustment[]
+  saleReturnItems     SaleReturnItem[]
+  purchaseReturnItems PurchaseReturnItem[]
 
   @@map("products")
 }
@@ -126,7 +130,8 @@ model Supplier {
   updatedAt      DateTime @updatedAt
 
   purchases     Purchase[]
-  ledgerEntries PartyLedgerEntry[]
+  ledgerEntries     PartyLedgerEntry[]
+  purchaseReturns   PurchaseReturn[]
 
   @@map("suppliers")
 }
@@ -147,6 +152,7 @@ model Customer {
 
   sales         Sale[]
   ledgerEntries PartyLedgerEntry[]
+  saleReturns   SaleReturn[]
 
   @@map("customers")
 }
@@ -177,7 +183,8 @@ model Purchase {
   items          PurchaseItem[]
   payments       PurchasePayment[]
   ledgerEntries  PartyLedgerEntry[]
-  journalEntries JournalEntry[]
+  journalEntries  JournalEntry[]
+  purchaseReturns PurchaseReturn[]
 
   @@index([supplierId])
   @@index([purchaseDate])
@@ -195,8 +202,9 @@ model PurchaseItem {
   totalCost   Decimal  @db.Decimal(14, 2)
   bagWeight   Decimal? @db.Decimal(12, 3)
 
-  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
-  product  Product  @relation(fields: [productId], references: [id])
+  purchase     Purchase               @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  product      Product                @relation(fields: [productId], references: [id])
+  returnItems  PurchaseReturnItem[]
 
   @@index([purchaseId])
   @@index([productId])
@@ -242,6 +250,7 @@ model Sale {
   items          SaleItem[]
   journalEntries JournalEntry[]
   ledgerEntries  PartyLedgerEntry[]
+  saleReturns    SaleReturn[]
 
   @@index([customerId])
   @@index([saleDate])
@@ -259,12 +268,99 @@ model SaleItem {
   discount    Decimal @default(0) @db.Decimal(5, 2)
   totalAmount Decimal @db.Decimal(14, 2)
 
-  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id])
+  sale         Sale               @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product      Product            @relation(fields: [productId], references: [id])
+  returnItems  SaleReturnItem[]
 
   @@index([saleId])
   @@index([productId])
   @@map("sale_items")
+}
+
+model SaleReturn {
+  id               Int              @id @default(autoincrement())
+  returnNo         String           @unique
+  saleId           Int
+  customerId       Int?
+  userId           Int
+  returnDate       DateTime         @default(now())
+  totalAmount      Decimal          @db.Decimal(14, 2)
+  refundMethod     String
+  refundedAmount   Decimal          @default(0) @db.Decimal(14, 2)
+  notes            String?          @db.Text
+  createdAt        DateTime         @default(now())
+
+  sale             Sale               @relation(fields: [saleId], references: [id])
+  customer         Customer?          @relation(fields: [customerId], references: [id])
+  user             User               @relation(fields: [userId], references: [id])
+  items            SaleReturnItem[]
+  journalEntries   JournalEntry[]
+
+  @@index([saleId])
+  @@index([returnDate])
+  @@map("sale_returns")
+}
+
+model SaleReturnItem {
+  id           Int      @id @default(autoincrement())
+  saleReturnId Int
+  saleItemId   Int
+  productId    Int
+  quantityKg   Decimal  @db.Decimal(12, 3)
+  displayUnit  String
+  displayQty   Decimal  @db.Decimal(12, 3)
+  unitPriceKg  Decimal  @db.Decimal(12, 2)
+  totalAmount  Decimal  @db.Decimal(14, 2)
+
+  saleReturn SaleReturn @relation(fields: [saleReturnId], references: [id], onDelete: Cascade)
+  saleItem   SaleItem   @relation(fields: [saleItemId], references: [id])
+  product    Product    @relation(fields: [productId], references: [id])
+
+  @@index([saleReturnId])
+  @@index([saleItemId])
+  @@map("sale_return_items")
+}
+
+model PurchaseReturn {
+  id            Int               @id @default(autoincrement())
+  returnNo      String            @unique
+  purchaseId    Int
+  supplierId    Int
+  userId        Int
+  returnDate    DateTime          @default(now())
+  totalAmount   Decimal           @db.Decimal(14, 2)
+  notes         String?           @db.Text
+  createdAt     DateTime          @default(now())
+
+  purchase      Purchase               @relation(fields: [purchaseId], references: [id])
+  supplier      Supplier               @relation(fields: [supplierId], references: [id])
+  user          User                   @relation(fields: [userId], references: [id])
+  items         PurchaseReturnItem[]
+  journalEntries JournalEntry[]
+
+  @@index([purchaseId])
+  @@index([returnDate])
+  @@map("purchase_returns")
+}
+
+model PurchaseReturnItem {
+  id                Int             @id @default(autoincrement())
+  purchaseReturnId  Int
+  purchaseItemId    Int
+  productId         Int
+  quantityKg        Decimal         @db.Decimal(12, 3)
+  displayUnit       String
+  displayQty        Decimal         @db.Decimal(12, 3)
+  unitCostKg        Decimal         @db.Decimal(12, 2)
+  totalCost         Decimal         @db.Decimal(14, 2)
+
+  purchaseReturn PurchaseReturn @relation(fields: [purchaseReturnId], references: [id], onDelete: Cascade)
+  purchaseItem   PurchaseItem   @relation(fields: [purchaseItemId], references: [id])
+  product        Product        @relation(fields: [productId], references: [id])
+
+  @@index([purchaseReturnId])
+  @@index([purchaseItemId])
+  @@map("purchase_return_items")
 }
 
 model Account {
@@ -285,22 +381,26 @@ model Account {
 }
 
 model JournalEntry {
-  id            Int      @id @default(autoincrement())
-  entryNo       String   @unique
-  description   String
-  entryDate     DateTime @default(now())
-  referenceType String?
-  referenceId   Int?
-  saleId        Int?
-  purchaseId    Int?
-  isReversed    Boolean  @default(false)
-  reversedById  Int?
-  createdAt     DateTime @default(now())
-  createdById   Int?
+  id               Int             @id @default(autoincrement())
+  entryNo          String          @unique
+  description      String
+  entryDate        DateTime        @default(now())
+  referenceType    String?
+  referenceId      Int?
+  saleId           Int?
+  purchaseId       Int?
+  saleReturnId     Int?
+  purchaseReturnId Int?
+  isReversed       Boolean         @default(false)
+  reversedById     Int?
+  createdAt        DateTime        @default(now())
+  createdById      Int?
 
-  lines    JournalLine[]
-  sale     Sale?         @relation(fields: [saleId], references: [id])
-  purchase Purchase?     @relation(fields: [purchaseId], references: [id])
+  lines            JournalLine[]
+  sale             Sale?            @relation(fields: [saleId], references: [id])
+  purchase         Purchase?        @relation(fields: [purchaseId], references: [id])
+  saleReturn       SaleReturn?      @relation(fields: [saleReturnId], references: [id])
+  purchaseReturn   PurchaseReturn?  @relation(fields: [purchaseReturnId], references: [id])
 
   @@index([entryDate])
   @@index([referenceType, referenceId])

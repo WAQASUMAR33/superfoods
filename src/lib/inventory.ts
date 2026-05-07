@@ -49,8 +49,8 @@ export async function getStockLevel(tx: TxClient, productId: number): Promise<nu
     _sum: { quantityKg: true },
   });
 
-  const inTypes = ["PURCHASE_IN", "ADJUSTMENT_IN", "RETURN_IN"];
-  const outTypes = ["SALE_OUT", "ADJUSTMENT_OUT", "RETURN_OUT"];
+  const inTypes = ["PURCHASE_IN", "ADJUSTMENT_IN", "RETURN_IN", "SALE_RETURN_IN"];
+  const outTypes = ["SALE_OUT", "ADJUSTMENT_OUT", "RETURN_OUT", "PURCHASE_RETURN_OUT"];
 
   let totalIn = 0;
   let totalOut = 0;
@@ -70,8 +70,8 @@ export async function getStockLevels(prisma: TxClient): Promise<Record<number, n
     _sum: { quantityKg: true },
   });
 
-  const inTypes = ["PURCHASE_IN", "ADJUSTMENT_IN", "RETURN_IN"];
-  const outTypes = ["SALE_OUT", "ADJUSTMENT_OUT", "RETURN_OUT"];
+  const inTypes = ["PURCHASE_IN", "ADJUSTMENT_IN", "RETURN_IN", "SALE_RETURN_IN"];
+  const outTypes = ["SALE_OUT", "ADJUSTMENT_OUT", "RETURN_OUT", "PURCHASE_RETURN_OUT"];
   const levels: Record<number, number> = {};
 
   for (const m of movements) {

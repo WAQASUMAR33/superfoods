@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Search, X, Plus, Minus, Printer, Check, Share2 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { useCart } from "@/hooks/useCart";
@@ -23,6 +23,65 @@ interface Customer {
   name: string;
   phone?: string | null;
   creditLimit: number;
+}
+
+function sanitizeQtyText(raw: string): string {
+  const cleaned = raw.replace(/[^\d.]/g, "");
+  const i = cleaned.indexOf(".");
+  if (i === -1) return cleaned;
+  return cleaned.slice(0, i + 1) + cleaned.slice(i + 1).replace(/\./g, "");
+}
+
+/** Human-readable qty for the cart field (no leading zero placeholder). */
+function formatQtyForField(q: number): string {
+  if (!Number.isFinite(q) || q < 0.001) return "";
+  const rounded = Number(q.toFixed(6));
+  return String(rounded);
+}
+
+/** Text `input` + numeric parsing: no number spinners, empty while editing clears display without showing "0". */
+function CartQtyTextInput({ displayQty, onCommit }: { displayQty: number; onCommit: (q: number) => void }) {
+  const [focused, setFocused] = useState(false);
+  const [draft, setDraft] = useState(() => formatQtyForField(displayQty));
+
+  useEffect(() => {
+    if (!focused) {
+      setDraft(formatQtyForField(displayQty));
+    }
+  }, [displayQty, focused]);
+
+  const shown = focused ? draft : formatQtyForField(displayQty);
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      autoComplete="off"
+      value={shown}
+      onFocus={() => {
+        setFocused(true);
+        setDraft(formatQtyForField(displayQty));
+      }}
+      onChange={(e) => {
+        const next = sanitizeQtyText(e.target.value);
+        setDraft(next);
+        const n = parseFloat(next);
+        if (next !== "" && !Number.isNaN(n) && n >= 0.001) {
+          onCommit(n);
+        }
+      }}
+      onBlur={() => {
+        setFocused(false);
+        const n = parseFloat(draft);
+        if (draft.trim() === "" || Number.isNaN(n) || n < 0.001) {
+          onCommit(Math.max(0.001, displayQty));
+        } else {
+          onCommit(n);
+        }
+      }}
+      className="w-14 text-center text-xs border-x py-0.5 focus:outline-none tabular-nums"
+    />
+  );
 }
 
 interface Props {
@@ -262,13 +321,9 @@ export function POSTerminal({ products, customers }: Props) {
                   <div className="flex items-center border rounded">
                     <button onClick={() => dispatch({ type: "UPDATE_QTY", productId: item.productId, displayQty: Math.max(0.001, item.displayQty - 1), unit: item.displayUnit })}
                       className="px-2 py-0.5 hover:bg-gray-100"><Minus className="h-3 w-3" /></button>
-                    <input
-                      type="number"
-                      value={item.displayQty}
-                      onChange={(e) => dispatch({ type: "UPDATE_QTY", productId: item.productId, displayQty: Number(e.target.value), unit: item.displayUnit })}
-                      className="w-14 text-center text-xs border-x py-0.5 focus:outline-none"
-                      step={1}
-                      min={0.001}
+                    <CartQtyTextInput
+                      displayQty={item.displayQty}
+                      onCommit={(displayQty) => dispatch({ type: "UPDATE_QTY", productId: item.productId, displayQty, unit: item.displayUnit })}
                     />
                     <button onClick={() => dispatch({ type: "UPDATE_QTY", productId: item.productId, displayQty: item.displayQty + 1, unit: item.displayUnit })}
                       className="px-2 py-0.5 hover:bg-gray-100"><Plus className="h-3 w-3" /></button>

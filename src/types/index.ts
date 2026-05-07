@@ -65,6 +65,36 @@ export const SaleSchema = z.object({
 
 export type SaleFormData = z.infer<typeof SaleSchema>;
 
+// ─── SALE RETURN / PURCHASE RETURN ─────────────────────────────────────────────
+
+export const SaleReturnLineSchema = z.object({
+  saleItemId: z.number().int().positive(),
+  displayQty: z.number().positive(),
+});
+
+export const SaleReturnPayloadSchema = z.object({
+  returnDate: z.string().optional(),
+  refundMethod: z.enum(["CASH", "CREDIT"]),
+  refundedAmount: z.number().min(0).optional(),
+  notes: z.string().optional(),
+  items: z.array(SaleReturnLineSchema).min(1),
+});
+
+export type SaleReturnPayload = z.infer<typeof SaleReturnPayloadSchema>;
+
+export const PurchaseReturnLineSchema = z.object({
+  purchaseItemId: z.number().int().positive(),
+  displayQty: z.number().positive(),
+});
+
+export const PurchaseReturnPayloadSchema = z.object({
+  returnDate: z.string().optional(),
+  notes: z.string().optional(),
+  items: z.array(PurchaseReturnLineSchema).min(1),
+});
+
+export type PurchaseReturnPayload = z.infer<typeof PurchaseReturnPayloadSchema>;
+
 // ─── EXPENSE ──────────────────────────────────────────────────────────────────
 
 export const ExpenseSchema = z.object({

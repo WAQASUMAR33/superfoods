@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import Box from "@mui/material/Box";
 import Chip from "@mui/material/Chip";
@@ -16,6 +17,7 @@ import TableContainer from "@mui/material/TableContainer";
 import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
 import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined";
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined";
 import PersonIcon from "@mui/icons-material/Person";
@@ -86,6 +88,11 @@ export default async function PurchaseDetailPage({ params }: { params: Promise<{
           <Stack spacing={2.5}>
             <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5 }}>
               <PurchaseHistoryBackButton />
+              <Link href={`/purchases/${purchase.id}/return`} prefetch style={{ textDecoration: "none" }}>
+                <Button component="span" size="small" variant="outlined">
+                  Purchase return
+                </Button>
+              </Link>
             </Box>
 
             <Paper

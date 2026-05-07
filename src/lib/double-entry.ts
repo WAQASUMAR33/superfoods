@@ -48,6 +48,8 @@ export async function postJournalEntry(
     referenceId,
     saleId,
     purchaseId,
+    saleReturnId,
+    purchaseReturnId,
     lines,
     createdById,
   }: {
@@ -57,6 +59,8 @@ export async function postJournalEntry(
     referenceId?: number;
     saleId?: number;
     purchaseId?: number;
+    saleReturnId?: number;
+    purchaseReturnId?: number;
     lines: JournalLineInput[];
     createdById?: number;
   }
@@ -89,6 +93,8 @@ export async function postJournalEntry(
           referenceId,
           saleId,
           purchaseId,
+          saleReturnId,
+          purchaseReturnId,
           createdById,
           lines: { create: lineCreates },
         },
