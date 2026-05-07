@@ -16,6 +16,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import EditIcon from "@mui/icons-material/Edit";
 import PaymentIcon from "@mui/icons-material/Payment";
 
 import { Header } from "@/components/layout/Header";
@@ -58,6 +59,11 @@ export default async function SupplierDetailPage({
             <Link href={`/suppliers/${supplier.id}/payment`} style={{ textDecoration: "none", display: "inline-flex" }}>
               <Button component="span" startIcon={<PaymentIcon />} size="small" variant="contained">
                 Record payment
+              </Button>
+            </Link>
+            <Link href={`/suppliers/${supplier.id}/edit`} style={{ textDecoration: "none", display: "inline-flex" }}>
+              <Button component="span" startIcon={<EditIcon />} size="small" variant="outlined">
+                Edit Supplier
               </Button>
             </Link>
           </Box>

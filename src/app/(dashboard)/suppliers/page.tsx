@@ -15,6 +15,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import EditIcon from "@mui/icons-material/Edit";
 
 import { Header } from "@/components/layout/Header";
 import { UrlSyncedFilters } from "@/components/mui/UrlSyncedFilters";
@@ -136,9 +137,16 @@ export default async function SuppliersPage({
                         <Chip label={s._count.purchases} size="small" variant="outlined" />
                       </TableCell>
                       <TableCell align="right">
-                        <Link href={`/suppliers/${s.id}`} prefetch style={{ textDecoration: "none" }}>
-                          <Button size="small">View</Button>
-                        </Link>
+                        <Box sx={{ display: "inline-flex", gap: 1 }}>
+                          <Link href={`/suppliers/${s.id}/edit`} prefetch style={{ textDecoration: "none" }}>
+                            <Button size="small" startIcon={<EditIcon />}>
+                              Edit
+                            </Button>
+                          </Link>
+                          <Link href={`/suppliers/${s.id}`} prefetch style={{ textDecoration: "none" }}>
+                            <Button size="small">View</Button>
+                          </Link>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );
