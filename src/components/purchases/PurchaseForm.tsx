@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { UNIT_OPTIONS, Unit, toKg } from "@/lib/units";
+import { Unit } from "@/lib/units";
 import { errorMessageFromFetchResponse } from "@/lib/httpErrorMessage";
 import { formatCurrency } from "@/lib/utils";
 
@@ -44,13 +44,16 @@ export function PurchaseForm({ suppliers, products }: { suppliers: Supplier[]; p
       const updated = { ...it, [field]: field === "productId" ? Number(value) : value };
       if (field === "productId") {
         const p = products.find((p) => p.id === Number(value));
-        if (p) updated.unitCostKg = p.purchasePrice;
+        if (p) {
+          updated.unitCostKg = p.purchasePrice;
+          updated.displayUnit = (p.defaultUnit as Unit) || "KG";
+        }
       }
       return updated;
     }));
   }
 
-  const subtotal = items.reduce((sum, it) => sum + toKg(it.displayQty, it.displayUnit) * it.unitCostKg, 0) - form.discount;
+  const subtotal = items.reduce((sum, it) => sum + it.displayQty * it.unitCostKg, 0) - form.discount;
 
   async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault();
@@ -136,26 +139,19 @@ export function PurchaseForm({ suppliers, products }: { suppliers: Supplier[]; p
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="hidden grid-cols-12 gap-2 px-1 text-xs font-medium uppercase text-gray-500 sm:grid">
-            <span className="col-span-4">Product</span>
-            <span className="col-span-2">Unit</span>
+            <span className="col-span-5">Product</span>
             <span className="col-span-2">Quantity</span>
-            <span className="col-span-2">Cost/Kg</span>
+            <span className="col-span-2">Cost/Unit</span>
             <span className="col-span-1 text-right">Total</span>
             <span />
           </div>
           {items.map((item, idx) => (
             <div key={idx} className="grid grid-cols-12 items-center gap-2">
-              <div className="col-span-4">
+              <div className="col-span-5">
                 <select value={item.productId} onChange={(e) => updateItem(idx, "productId", e.target.value)}
                   className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm">
                   <option value={0}>Select product</option>
                   {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              <div className="col-span-2">
-                <select value={item.displayUnit} onChange={(e) => updateItem(idx, "displayUnit", e.target.value)}
-                  className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm">
-                  {UNIT_OPTIONS.map((u) => <option key={u.value} value={u.value}>{u.value}</option>)}
                 </select>
               </div>
               <div className="col-span-2">
@@ -167,7 +163,7 @@ export function PurchaseForm({ suppliers, products }: { suppliers: Supplier[]; p
                   onChange={(e) => updateItem(idx, "unitCostKg", Number(e.target.value))} />
               </div>
               <div className="col-span-1 text-right text-sm font-medium">
-                {formatCurrency(toKg(item.displayQty, item.displayUnit) * item.unitCostKg)}
+                {formatCurrency(item.displayQty * item.unitCostKg)}
               </div>
               <div className="col-span-1 flex justify-end">
                 {items.length > 1 && (

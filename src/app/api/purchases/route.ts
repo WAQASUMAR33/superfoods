@@ -53,7 +53,8 @@ export async function POST(req: NextRequest) {
     let subtotal = 0;
     const itemsWithKg = data.items.map((item) => {
       const quantityKg = toKg(item.displayQty, item.displayUnit as Unit);
-      const totalCost = quantityKg * item.unitCostKg;
+      // UI sends rate per selected display unit.
+      const totalCost = item.displayQty * item.unitCostKg;
       subtotal += totalCost;
       return { ...item, quantityKg, totalCost };
     });
