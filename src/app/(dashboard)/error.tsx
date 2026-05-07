@@ -24,6 +24,7 @@ export default function DashboardError({
   /** Prisma migration / schema drift (tables missing after a deploy without migrate). */
   const isMigrationOrMissingTable =
     detail.includes("P2021") ||
+    detail.includes("P3005") ||
     detail.includes("P3018") ||
     /\bdoes not exist\b/i.test(detail) ||
     /Unknown table|'sale_returns'|'purchase_returns'|sale_returns|purchase_returns/i.test(detail);
@@ -42,7 +43,7 @@ export default function DashboardError({
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
           {isMigrationOrMissingTable
-            ? "The database schema is out of date (for example missing sale/purchase return tables). Run prisma migrate deploy against your production DATABASE_URL, then redeploy. The app build runs migrations automatically before next build."
+            ? "The database schema is out of date (for example missing sale/purchase return tables), or migrations were never baselined on this database (Prisma P3005). Run the steps in prisma/BASELINE_PRODUCTION.txt once, then use migrate deploy during deploy when ready."
             : isPool
               ? "The database connection pool timed out or is exhausted. Wait a moment and try again, or raise connection_limit and pool_timeout on your DATABASE_URL if this keeps happening."
               : "Something went wrong while loading this screen. You can try again or go back to the dashboard."}

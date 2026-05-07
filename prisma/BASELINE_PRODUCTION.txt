@@ -1,0 +1,40 @@
+Prisma P3005 — "database schema is not empty"
+================================================
+
+This happens when production was created with `db push`, manual SQL, or an older
+workflow, so tables exist but `_prisma_migrations` has no history. `migrate deploy`
+then refuses to run until you baseline.
+
+ONE-TIME (use your production DATABASE_URL on a machine that can reach the DB)
+
+1) For each migration that ALREADY matches production, mark it applied (no SQL run):
+
+   npx prisma migrate resolve --applied "20260503140000_remove_product_variety_grainlength"
+   npx prisma migrate resolve --applied "20260506130000_add_unit_definitions"
+
+   If `products` still has `variety` / `grainLength`, do NOT mark the first one;
+   fix schema first or run that migration SQL by hand, then resolve.
+
+   If `unit_definitions` does not exist yet, do NOT mark the second one.
+
+2) Apply anything still pending:
+
+   npx prisma migrate deploy
+
+   If production already had ALL three migrations applied manually (including
+   sale_returns / purchase_returns / journal_entries columns), instead mark the
+   third as applied only:
+
+   npx prisma migrate resolve --applied "20260508120000_sale_purchase_returns"
+
+3) After baseline is correct, you can run migrations during deploy, e.g. set
+   Vercel Build Command to:
+
+   npx prisma migrate deploy && npx prisma generate && npx next build
+
+   or use package script: npm run build:with-migrate
+
+Default `npm run build` is `next build` only so Vercel builds succeed before
+baseline is done.
+
+See: https://www.prisma.io/docs/guides/migrate/developing-with-prisma-migrate/baselining
