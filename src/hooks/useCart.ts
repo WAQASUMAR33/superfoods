@@ -73,6 +73,14 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       return { ...state, items };
     }
 
+    case "SET_ITEM_RATE": {
+      const items = state.items.map((i) => {
+        if (i.productId !== action.productId) return i;
+        return { ...i, unitPriceKg: action.rate, lineTotal: calcLineTotal({ ...i, unitPriceKg: action.rate }) };
+      });
+      return { ...state, items };
+    }
+
     case "SET_CUSTOMER":
       return { ...state, customerId: action.customerId, customerName: action.customerName };
 
@@ -100,7 +108,7 @@ export function useCart() {
   const [state, dispatch] = useReducer(cartReducer, initialState);
 
   const subtotal = state.items.reduce((sum, i) => sum + i.lineTotal, 0);
-  const discountAmount = (subtotal * state.globalDiscount) / 100;
+  const discountAmount = Math.max(0, Math.min(state.globalDiscount, subtotal));
   const total = subtotal - discountAmount;
   const change = state.paymentMethod === "CASH" ? Math.max(0, state.paidAmount - total) : 0;
 

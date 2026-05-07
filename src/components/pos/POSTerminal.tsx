@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Search, X, Plus, Minus, Printer, Check, LayoutGrid, ShoppingBag, Share2 } from "lucide-react";
+import { Search, X, Plus, Minus, Printer, Check, Share2 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { useCart } from "@/hooks/useCart";
 import { Unit, UNIT_OPTIONS, formatDisplay } from "@/lib/units";
@@ -39,7 +39,6 @@ export function POSTerminal({ products, customers }: Props) {
   const [error, setError] = useState("");
   const [lastSale, setLastSale] = useState<unknown>(null);
   const [showReceipt, setShowReceipt] = useState(false);
-  const [mobileTab, setMobileTab] = useState<"products" | "cart">("products");
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const filtered = products.filter((p) => {
@@ -94,7 +93,6 @@ export function POSTerminal({ products, customers }: Props) {
     setShowReceipt(false);
     setLastSale(null);
     setSearch("");
-    setMobileTab("products");
   }
 
   async function handleShareReceiptImage() {
@@ -159,9 +157,9 @@ export function POSTerminal({ products, customers }: Props) {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-gray-100">
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
         {/* Left: Product search + grid */}
-        <div className={`flex-col overflow-hidden flex-1 ${mobileTab === "cart" ? "hidden md:flex" : "flex"}`}>
+        <div className="flex min-h-0 flex-col overflow-hidden md:flex-1">
           <div className="bg-white border-b p-3 flex gap-2 items-center">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -189,7 +187,6 @@ export function POSTerminal({ products, customers }: Props) {
                   key={p.id}
                   onClick={() => {
                     dispatch({ type: "ADD_ITEM", product: { id: p.id, code: p.code, name: p.name, salePrice: p.salePrice, stockKg: p.stockKg, defaultUnit: p.defaultUnit as Unit } });
-                    setMobileTab("cart");
                   }}
                   disabled={isOut}
                   className={`rounded-lg border bg-white p-3 text-left shadow-sm hover:border-blue-400 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isOut ? "border-red-200" : isLow ? "border-yellow-300" : "border-gray-200"}`}
@@ -198,7 +195,7 @@ export function POSTerminal({ products, customers }: Props) {
                   <p className="text-sm font-semibold text-gray-900 mt-0.5 leading-tight">{p.name}</p>
                   {p.brand ? <p className="text-xs text-gray-500 truncate">{p.brand.name}</p> : null}
                   <div className="mt-2 flex items-center justify-between">
-                    <span className="text-sm font-bold text-blue-600">{formatCurrency(p.salePrice)}<span className="text-xs font-normal text-gray-400">/kg</span></span>
+                    <span className="text-sm font-bold text-blue-600">{formatCurrency(p.salePrice)}<span className="text-xs font-normal text-gray-400">/unit</span></span>
                     <span className={`text-xs font-medium ${isOut ? "text-red-600" : isLow ? "text-yellow-600" : "text-green-600"}`}>
                       {isOut ? "OUT" : formatDisplay(p.stockKg, "KG")}
                     </span>
@@ -210,7 +207,7 @@ export function POSTerminal({ products, customers }: Props) {
         </div>
 
         {/* Right: Cart */}
-        <div className={`flex-col bg-white overflow-hidden md:border-l ${mobileTab === "products" ? "hidden md:flex md:w-96 md:flex-none" : "flex flex-1 md:w-96 md:flex-none"}`}>
+        <div className="flex max-h-[50vh] min-h-0 flex-col overflow-hidden border-t bg-white md:max-h-none md:w-96 md:flex-none md:border-l md:border-t-0">
           {/* Customer picker */}
           <div className="p-3 border-b relative">
             <input
@@ -288,8 +285,24 @@ export function POSTerminal({ products, customers }: Props) {
                   <span className="text-xs text-gray-400">{item.quantityKg.toFixed(2)} Kg</span>
                 </div>
 
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[10px] text-gray-500">Rate / unit</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={item.unitPriceKg}
+                      onChange={(e) => dispatch({ type: "SET_ITEM_RATE", productId: item.productId, rate: Math.max(0, Number(e.target.value) || 0) })}
+                      className="mt-0.5 w-full rounded border px-2 py-1 text-xs text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] text-gray-500">Line Total</p>
+                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(item.lineTotal)}</p>
+                  </div>
+                </div>
                 <div className="mt-1.5 flex items-center justify-between">
-                  <span className="text-xs text-gray-500">@ {formatCurrency(item.unitPriceKg)}/Kg</span>
+                  <span className="text-xs text-gray-500">@ {formatCurrency(item.unitPriceKg)}/unit</span>
                   <span className="text-sm font-semibold text-gray-900">{formatCurrency(item.lineTotal)}</span>
                 </div>
               </div>
@@ -304,10 +317,10 @@ export function POSTerminal({ products, customers }: Props) {
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Discount %</span>
-              <input type="number" min={0} max={100} value={state.globalDiscount}
+              <span className="text-sm text-gray-500">Discount Amount</span>
+              <input type="number" min={0} value={state.globalDiscount}
                 onChange={(e) => dispatch({ type: "SET_GLOBAL_DISCOUNT", discount: Number(e.target.value) })}
-                className="w-16 rounded border px-2 py-0.5 text-xs text-right" />
+                className="w-24 rounded border px-2 py-0.5 text-xs text-right" />
               <span className="ml-auto text-sm text-red-500">-{formatCurrency(discountAmount)}</span>
             </div>
 
@@ -354,33 +367,6 @@ export function POSTerminal({ products, customers }: Props) {
             </button>
           </div>
         </div>
-      </div>
-
-      {/* Mobile bottom tab bar */}
-      <div className="flex flex-shrink-0 border-t border-gray-200 bg-white md:hidden">
-        <button
-          onClick={() => setMobileTab("products")}
-          className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition ${
-            mobileTab === "products" ? "text-blue-600" : "text-gray-500"
-          }`}
-        >
-          <LayoutGrid className="h-5 w-5" />
-          Products
-        </button>
-        <button
-          onClick={() => setMobileTab("cart")}
-          className={`relative flex flex-1 flex-col items-center gap-1 py-2.5 text-xs font-medium transition ${
-            mobileTab === "cart" ? "text-green-600" : "text-gray-500"
-          }`}
-        >
-          <ShoppingBag className="h-5 w-5" />
-          {state.items.length > 0 && (
-            <span className="absolute right-1/4 top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-              {state.items.length}
-            </span>
-          )}
-          Cart{state.items.length > 0 ? ` (${state.items.length})` : ""}
-        </button>
       </div>
     </div>
   );

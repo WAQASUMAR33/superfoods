@@ -109,6 +109,7 @@ export type CartAction =
   | { type: "UPDATE_QTY"; productId: number; displayQty: number; unit: Unit }
   | { type: "CHANGE_UNIT"; productId: number; unit: Unit }
   | { type: "SET_ITEM_DISCOUNT"; productId: number; discount: number }
+  | { type: "SET_ITEM_RATE"; productId: number; rate: number }
   | { type: "SET_CUSTOMER"; customerId: number | null; customerName: string }
   | { type: "SET_GLOBAL_DISCOUNT"; discount: number }
   | { type: "SET_PAYMENT_METHOD"; method: CartState["paymentMethod"] }
