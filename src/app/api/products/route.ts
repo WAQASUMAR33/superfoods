@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
   try {
     const unitAllowed = await isUnitAllowed(d.defaultUnit);
     if (!unitAllowed) {
-      return NextResponse.json({ error: "Invalid default unit. Choose an active unit from Unit Management." }, { status: 400 });
+      return NextResponse.json({ error: "Invalid default unit." }, { status: 400 });
     }
     const product = await prisma.product.create({
       data: {

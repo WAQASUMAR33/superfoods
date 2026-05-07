@@ -6,29 +6,25 @@ import { getStockLevel } from "@/lib/inventory";
 import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 import { formatNumber, formatDateTime } from "@/lib/utils";
 import { notFound } from "next/navigation";
-import { getActiveUnitsOrFallback } from "@/lib/unitDefinitions";
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const productId = Number(id);
-  const [units, txData] = await Promise.all([
-    getActiveUnitsOrFallback(),
-    prisma.$transaction(
-      async (tx) => {
-        const product = await tx.product.findUnique({
-          where: { id: productId },
-          include: { brand: true, stockMovements: { orderBy: { movedAt: "desc" }, take: 30 } },
-        });
-        const brands = await tx.brand.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
-        if (!product) {
-          return { product: null, brands, stockKg: 0 };
-        }
-        const stockKg = await getStockLevel(tx, product.id);
-        return { product, brands, stockKg };
-      },
-      interactiveTransactionOptions
-    ),
-  ]);
+  const txData = await prisma.$transaction(
+    async (tx) => {
+      const product = await tx.product.findUnique({
+        where: { id: productId },
+        include: { brand: true, stockMovements: { orderBy: { movedAt: "desc" }, take: 30 } },
+      });
+      const brands = await tx.brand.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+      if (!product) {
+        return { product: null, brands, stockKg: 0 };
+      }
+      const stockKg = await getStockLevel(tx, product.id);
+      return { product, brands, stockKg };
+    },
+    interactiveTransactionOptions
+  );
   const { product, brands, stockKg } = txData;
 
   if (!product) notFound();
@@ -41,7 +37,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <ProductForm
             key={product.id}
             brands={brands}
-            units={units.map((u) => ({ id: u.id, code: u.code, name: u.name, kgFactor: u.kgFactor }))}
             product={product}
           />
         </div>

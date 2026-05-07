@@ -97,9 +97,6 @@ export default async function ProductsPage({
               <Link href="/products/brands" prefetch style={{ textDecoration: "none" }}>
                 <Button variant="outlined">Manage Brands</Button>
               </Link>
-              <Link href="/products/units" prefetch style={{ textDecoration: "none" }}>
-                <Button variant="outlined">Manage Units</Button>
-              </Link>
               <Link href="/products/new" prefetch style={{ textDecoration: "none" }}>
                 <Button variant="contained" startIcon={<AddIcon />}>
                   Add Product
@@ -141,9 +138,9 @@ export default async function ProductsPage({
                   <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Code</TableCell>
                   <TableCell>Name</TableCell>
                   <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>Brand</TableCell>
-                  <TableCell align="right">Sale / Kg</TableCell>
+                  <TableCell align="right">Sale Price</TableCell>
                   <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} align="right">
-                    Stock (Kg)
+                    Stock
                   </TableCell>
                   <TableCell>Status</TableCell>
                   <TableCell align="right" width={220} />

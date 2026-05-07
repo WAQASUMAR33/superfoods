@@ -22,7 +22,6 @@ import { errorMessageFromFetchResponse } from "@/lib/httpErrorMessage";
 
 interface Props {
   brands: { id: number; name: string }[];
-  units: { id: number; code: string; name: string; kgFactor: number }[];
   product?: {
     id: number;
     code: string;
@@ -49,7 +48,7 @@ function decimalsToForm(product: NonNullable<Props["product"]>): ProductFormData
   };
 }
 
-export function ProductForm({ brands, units, product }: Props) {
+export function ProductForm({ brands, product }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -77,6 +76,7 @@ export function ProductForm({ brands, units, product }: Props) {
   async function onSubmit(data: ProductFormData) {
     setSaving(true);
     setError("");
+    const payload: ProductFormData = { ...data, defaultUnit: "KG" };
     const url = isEdit ? `/api/products/${product!.id}` : "/api/products";
     const method = isEdit ? "PUT" : "POST";
 
@@ -84,7 +84,7 @@ export function ProductForm({ brands, units, product }: Props) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -138,7 +138,7 @@ export function ProductForm({ brands, units, product }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div>
             <div>
               <Label>Brand</Label>
               <Controller
@@ -157,27 +157,6 @@ export function ProductForm({ brands, units, product }: Props) {
                       {brands.map((b) => (
                         <SelectItem key={b.id} value={String(b.id)}>
                           {b.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-            </div>
-            <div>
-              <Label>Default Unit</Label>
-              <Controller
-                name="defaultUnit"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {units.map((u) => (
-                        <SelectItem key={u.id} value={u.code}>
-                          {u.name} ({u.code}) · {Number(u.kgFactor).toFixed(3)} Kg
                         </SelectItem>
                       ))}
                     </SelectContent>
