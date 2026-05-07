@@ -260,17 +260,17 @@ export function POSTerminal({ products, customers }: Props) {
 
                 <div className="mt-2 flex items-center gap-2">
                   <div className="flex items-center border rounded">
-                    <button onClick={() => dispatch({ type: "UPDATE_QTY", productId: item.productId, displayQty: Math.max(0.5, item.displayQty - (item.displayUnit === "KG" ? 5 : 1)), unit: item.displayUnit })}
+                    <button onClick={() => dispatch({ type: "UPDATE_QTY", productId: item.productId, displayQty: Math.max(0.001, item.displayQty - 1), unit: item.displayUnit })}
                       className="px-2 py-0.5 hover:bg-gray-100"><Minus className="h-3 w-3" /></button>
                     <input
                       type="number"
                       value={item.displayQty}
                       onChange={(e) => dispatch({ type: "UPDATE_QTY", productId: item.productId, displayQty: Number(e.target.value), unit: item.displayUnit })}
                       className="w-14 text-center text-xs border-x py-0.5 focus:outline-none"
-                      step={item.displayUnit === "KG" ? 5 : 1}
+                      step={1}
                       min={0.001}
                     />
-                    <button onClick={() => dispatch({ type: "UPDATE_QTY", productId: item.productId, displayQty: item.displayQty + (item.displayUnit === "KG" ? 5 : 1), unit: item.displayUnit })}
+                    <button onClick={() => dispatch({ type: "UPDATE_QTY", productId: item.productId, displayQty: item.displayQty + 1, unit: item.displayUnit })}
                       className="px-2 py-0.5 hover:bg-gray-100"><Plus className="h-3 w-3" /></button>
                   </div>
                   <input
