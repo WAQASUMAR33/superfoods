@@ -15,6 +15,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import EditIcon from "@mui/icons-material/Edit";
 
 import { Header } from "@/components/layout/Header";
 import { UrlSyncedFilters } from "@/components/mui/UrlSyncedFilters";
@@ -141,9 +142,16 @@ export default async function CustomersPage({
                         <Chip label={c._count.sales} size="small" variant="outlined" />
                       </TableCell>
                       <TableCell align="right">
-                        <Link href={`/customers/${c.id}`} prefetch style={{ textDecoration: "none" }}>
-                          <Button size="small">View</Button>
-                        </Link>
+                        <Box sx={{ display: "inline-flex", gap: 1 }}>
+                          <Link href={`/customers/${c.id}/edit`} prefetch style={{ textDecoration: "none" }}>
+                            <Button size="small" startIcon={<EditIcon />}>
+                              Edit
+                            </Button>
+                          </Link>
+                          <Link href={`/customers/${c.id}`} prefetch style={{ textDecoration: "none" }}>
+                            <Button size="small">View</Button>
+                          </Link>
+                        </Box>
                       </TableCell>
                     </TableRow>
                   );
