@@ -20,6 +20,14 @@ export default function DashboardError({
   }, [error]);
 
   const detail = typeof error.message === "string" ? error.message : "";
+
+  /** Prisma migration / schema drift (tables missing after a deploy without migrate). */
+  const isMigrationOrMissingTable =
+    detail.includes("P2021") ||
+    detail.includes("P3018") ||
+    /\bdoes not exist\b/i.test(detail) ||
+    /Unknown table|'sale_returns'|'purchase_returns'|sale_returns|purchase_returns/i.test(detail);
+
   const isPool =
     detail.includes("connection pool") ||
     detail.includes("P2024") ||
@@ -33,9 +41,11 @@ export default function DashboardError({
           This page couldn&apos;t load
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          {isPool
-            ? "The database connection pool timed out or is exhausted. Wait a moment and try again, or raise connection_limit and pool_timeout on your DATABASE_URL if this keeps happening."
-            : "Something went wrong while loading this screen. You can try again or go back to the dashboard."}
+          {isMigrationOrMissingTable
+            ? "The database schema is out of date (for example missing sale/purchase return tables). Run prisma migrate deploy against your production DATABASE_URL, then redeploy. The app build runs migrations automatically before next build."
+            : isPool
+              ? "The database connection pool timed out or is exhausted. Wait a moment and try again, or raise connection_limit and pool_timeout on your DATABASE_URL if this keeps happening."
+              : "Something went wrong while loading this screen. You can try again or go back to the dashboard."}
         </Typography>
         {process.env.NODE_ENV === "development" && detail ? (
           <Typography
