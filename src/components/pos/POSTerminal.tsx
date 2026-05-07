@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { Search, X, Plus, Minus, Printer, Check, Share2 } from "lucide-react";
 import { toPng } from "html-to-image";
 import { useCart } from "@/hooks/useCart";
-import { Unit, UNIT_OPTIONS, formatDisplay } from "@/lib/units";
+import { Unit, formatDisplay } from "@/lib/units";
 import { formatCurrency } from "@/lib/utils";
 import { ReceiptSale, SaleReceipt } from "./SaleReceipt";
 
@@ -259,14 +259,6 @@ export function POSTerminal({ products, customers }: Props) {
                 </div>
 
                 <div className="mt-2 flex items-center gap-2">
-                  <select
-                    value={item.displayUnit}
-                    onChange={(e) => dispatch({ type: "CHANGE_UNIT", productId: item.productId, unit: e.target.value as Unit })}
-                    className="rounded border border-gray-300 px-1 py-0.5 text-xs"
-                  >
-                    {UNIT_OPTIONS.map((u) => <option key={u.value} value={u.value}>{u.value}</option>)}
-                  </select>
-
                   <div className="flex items-center border rounded">
                     <button onClick={() => dispatch({ type: "UPDATE_QTY", productId: item.productId, displayQty: Math.max(0.5, item.displayQty - (item.displayUnit === "KG" ? 5 : 1)), unit: item.displayUnit })}
                       className="px-2 py-0.5 hover:bg-gray-100"><Minus className="h-3 w-3" /></button>
@@ -281,25 +273,13 @@ export function POSTerminal({ products, customers }: Props) {
                     <button onClick={() => dispatch({ type: "UPDATE_QTY", productId: item.productId, displayQty: item.displayQty + (item.displayUnit === "KG" ? 5 : 1), unit: item.displayUnit })}
                       className="px-2 py-0.5 hover:bg-gray-100"><Plus className="h-3 w-3" /></button>
                   </div>
-
-                  <span className="text-xs text-gray-400">{item.displayQty.toFixed(2)} {item.displayUnit}</span>
-                </div>
-
-                <div className="mt-2 grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-gray-500">Rate / unit</label>
-                    <input
-                      type="number"
-                      min={0}
-                      value={item.unitPriceKg}
-                      onChange={(e) => dispatch({ type: "SET_ITEM_RATE", productId: item.productId, rate: Math.max(0, Number(e.target.value) || 0) })}
-                      className="mt-0.5 w-full rounded border px-2 py-1 text-xs text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-gray-500">Line Total</p>
-                    <p className="text-sm font-semibold text-gray-900">{formatCurrency(item.lineTotal)}</p>
-                  </div>
+                  <input
+                    type="number"
+                    min={0}
+                    value={item.unitPriceKg}
+                    onChange={(e) => dispatch({ type: "SET_ITEM_RATE", productId: item.productId, rate: Math.max(0, Number(e.target.value) || 0) })}
+                    className="w-24 rounded border px-2 py-1 text-xs text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
                 <div className="mt-1.5 flex items-center justify-between">
                   <span className="text-xs text-gray-500">@ {formatCurrency(item.unitPriceKg)}/unit</span>
