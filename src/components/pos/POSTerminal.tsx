@@ -347,11 +347,16 @@ export function POSTerminal({ products, customers }: Props) {
                       className="px-2 py-0.5 hover:bg-gray-100"><Plus className="h-3 w-3" /></button>
                   </div>
                   <input
-                    type="number"
-                    min={0}
-                    value={item.unitPriceKg}
-                    onChange={(e) => dispatch({ type: "SET_ITEM_RATE", productId: item.productId, rate: Math.max(0, Number(e.target.value) || 0) })}
-                    className="w-24 rounded border px-2 py-1 text-xs text-right focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={item.unitPriceKg || ""}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^\d.]/g, "");
+                      dispatch({ type: "SET_ITEM_RATE", productId: item.productId, rate: Math.max(0, Number(v) || 0) });
+                    }}
+                    placeholder="0"
+                    className="w-24 rounded border px-2 py-1 text-xs text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <div className="mt-1.5 flex items-center justify-between">
@@ -371,9 +376,19 @@ export function POSTerminal({ products, customers }: Props) {
 
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">Discount Amount</span>
-              <input type="number" min={0} value={state.globalDiscount}
-                onChange={(e) => dispatch({ type: "SET_GLOBAL_DISCOUNT", discount: Number(e.target.value) })}
-                className="w-24 rounded border px-2 py-0.5 text-xs text-right" />
+              <input
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                value={state.globalDiscount || ""}
+                onFocus={(e) => { if (Number(e.target.value) === 0) e.target.value = ""; }}
+                onChange={(e) => {
+                  const v = e.target.value.replace(/[^\d.]/g, "");
+                  dispatch({ type: "SET_GLOBAL_DISCOUNT", discount: Number(v) || 0 });
+                }}
+                placeholder="0"
+                className="w-24 rounded border px-2 py-0.5 text-xs text-right tabular-nums"
+              />
               <span className="ml-auto text-sm text-red-500">-{formatCurrency(discountAmount)}</span>
             </div>
 
@@ -395,10 +410,18 @@ export function POSTerminal({ products, customers }: Props) {
               {state.paymentMethod !== "CREDIT" && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500">Received</span>
-                  <input type="number" value={state.paidAmount || ""}
-                    onChange={(e) => dispatch({ type: "SET_PAID_AMOUNT", amount: Number(e.target.value) })}
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={state.paidAmount || ""}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^\d.]/g, "");
+                      dispatch({ type: "SET_PAID_AMOUNT", amount: Number(v) || 0 });
+                    }}
                     placeholder={formatCurrency(total)}
-                    className="flex-1 rounded border px-2 py-1 text-sm text-right focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    className="flex-1 rounded border px-2 py-1 text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
               )}
 
