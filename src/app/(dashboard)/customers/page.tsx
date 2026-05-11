@@ -36,7 +36,7 @@ export default async function CustomersPage({
     isActive: true,
     ...(q
       ? {
-          OR: [{ name: { contains: q } }, { code: { contains: q } }, { phone: { contains: q } }],
+          OR: [{ name: { contains: q } }, { code: { contains: q } }, { phone: { contains: q } }, { businessName: { contains: q } }],
         }
       : {}),
     ...(city ? { city: { contains: city } } : {}),
@@ -123,6 +123,11 @@ export default async function CustomersPage({
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
                           {c.name}
                         </Typography>
+                        {c.businessName ? (
+                          <Typography variant="caption" color="text.secondary">
+                            {c.businessName}
+                          </Typography>
+                        ) : null}
                       </TableCell>
                       <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} color="text.secondary">
                         {c.phone ?? "—"}

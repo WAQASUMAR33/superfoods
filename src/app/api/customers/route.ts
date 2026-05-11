@@ -8,6 +8,7 @@ import { z } from "zod";
 const CustomerSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
+  businessName: z.string().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),
@@ -26,7 +27,7 @@ export async function GET(req: NextRequest) {
   const customers = await prisma.customer.findMany({
     where: {
       isActive: true,
-      ...(q && { OR: [{ name: { contains: q } }, { code: { contains: q } }, { phone: { contains: q } }] }),
+      ...(q && { OR: [{ name: { contains: q } }, { code: { contains: q } }, { phone: { contains: q } }, { businessName: { contains: q } }] }),
     },
     orderBy: { name: "asc" },
   });

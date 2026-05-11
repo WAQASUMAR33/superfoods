@@ -78,6 +78,11 @@ export default async function CustomerDetailPage({
                   <Typography variant="body2" color="text.secondary">
                     Code: {customer.code}
                   </Typography>
+                  {customer.businessName ? (
+                    <Typography variant="body2" color="text.secondary">
+                      Business: {customer.businessName}
+                    </Typography>
+                  ) : null}
                   <Typography variant="body2" color="text.secondary">
                     Phone: {customer.phone ?? "—"}
                   </Typography>

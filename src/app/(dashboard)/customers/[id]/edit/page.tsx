@@ -12,6 +12,7 @@ import { errorMessageFromFetchResponse } from "@/lib/httpErrorMessage";
 interface CustomerFormState {
   code: string;
   name: string;
+  businessName: string;
   phone: string;
   city: string;
   address: string;
@@ -23,6 +24,7 @@ interface CustomerFormState {
 const EMPTY_FORM: CustomerFormState = {
   code: "",
   name: "",
+  businessName: "",
   phone: "",
   city: "",
   address: "",
@@ -60,6 +62,7 @@ export default function EditCustomerPage() {
         setForm({
           code: customer.code ?? "",
           name: customer.name ?? "",
+          businessName: customer.businessName ?? "",
           phone: customer.phone ?? "",
           city: customer.city ?? "",
           address: customer.address ?? "",
@@ -129,6 +132,10 @@ export default function EditCustomerPage() {
                     <div>
                       <Label>Customer Name *</Label>
                       <Input value={form.name} onChange={(e) => set("name", e.target.value)} required className="mt-1" />
+                    </div>
+                    <div>
+                      <Label>Business Name</Label>
+                      <Input value={form.businessName} onChange={(e) => set("businessName", e.target.value)} className="mt-1" placeholder="Business / company name" />
                     </div>
                     <div>
                       <Label>Phone</Label>

@@ -140,6 +140,7 @@ model Customer {
   id             Int      @id @default(autoincrement())
   code           String   @unique
   name           String
+  businessName   String?  @map("business_name")
   phone          String?
   address        String?  @db.Text
   city           String?

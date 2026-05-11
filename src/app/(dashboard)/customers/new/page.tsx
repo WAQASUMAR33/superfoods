@@ -13,7 +13,7 @@ export default function NewCustomerPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [form, setForm] = useState({
-    code: "", name: "", phone: "", city: "", address: "",
+    code: "", name: "", businessName: "", phone: "", city: "", address: "",
     creditLimit: 0, openingBalance: 0, notes: "",
   });
 
@@ -60,6 +60,10 @@ export default function NewCustomerPage() {
                   <div>
                     <Label>Customer Name *</Label>
                     <Input value={form.name} onChange={(e) => set("name", e.target.value)} required className="mt-1" placeholder="Customer name" />
+                  </div>
+                  <div>
+                    <Label>Business Name</Label>
+                    <Input value={form.businessName} onChange={(e) => set("businessName", e.target.value)} className="mt-1" placeholder="Business / company name" />
                   </div>
                   <div>
                     <Label>Phone</Label>

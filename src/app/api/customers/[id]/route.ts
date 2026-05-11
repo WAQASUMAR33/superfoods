@@ -8,6 +8,7 @@ import { z } from "zod";
 const CustomerSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
+  businessName: z.string().optional(),
   phone: z.string().optional(),
   address: z.string().optional(),
   city: z.string().optional(),

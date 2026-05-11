@@ -162,7 +162,7 @@ export function POSTerminal({ products, customers }: Props) {
       const dataUrl = await toPng(receiptRef.current, {
         cacheBust: true,
         pixelRatio: 2,
-        backgroundColor: "#f3f4f6",
+        backgroundColor: "#ffffff",
       });
 
       const response = await fetch(dataUrl);
@@ -207,7 +207,10 @@ export function POSTerminal({ products, customers }: Props) {
             New Sale
           </button>
         </div>
-        <div ref={receiptRef} className="flex-1 overflow-y-auto p-4">
+        <div
+          ref={receiptRef}
+          className="flex flex-1 justify-center overflow-y-auto bg-gray-100 p-4 print:justify-start print:bg-white print:p-0"
+        >
           <SaleReceipt sale={lastSale as Parameters<typeof SaleReceipt>[0]["sale"]} />
         </div>
       </div>

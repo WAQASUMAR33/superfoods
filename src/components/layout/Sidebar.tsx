@@ -44,6 +44,16 @@ const ADMIN_NAV_TAIL: NavItem[] = [
   { label: "Users", href: "/users", icon: UserRoundCog },
 ];
 
+function isActivePath(pathname: string, href: string): boolean {
+  if (pathname === href) return true;
+  if (!pathname.startsWith(href + "/")) return false;
+
+  // Keep parent section highlighted for nested pages, except explicit returns routes.
+  if (href === "/sales" && pathname.startsWith("/sales/returns")) return false;
+  if (href === "/purchases" && pathname.startsWith("/purchases/returns")) return false;
+  return true;
+}
+
 function SidebarInner({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -89,7 +99,7 @@ function SidebarInner({ onClose }: { onClose?: () => void }) {
           }
           if (!("href" in item)) return null;
           const Icon = item.icon!;
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const active = isActivePath(pathname, item.href);
           return (
             <Link
               key={item.href}
@@ -142,13 +152,13 @@ export function Sidebar() {
   return (
     <>
       {/* Desktop — always visible */}
-      <div className="hidden h-screen w-64 flex-shrink-0 lg:flex">
+      <div className="hidden h-screen w-64 flex-shrink-0 print:hidden lg:flex">
         <SidebarInner />
       </div>
 
       {/* Mobile — slide-over drawer */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
+        <div className="fixed inset-0 z-50 print:hidden lg:hidden">
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
             onClick={close}

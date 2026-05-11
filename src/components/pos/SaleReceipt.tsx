@@ -1,3 +1,4 @@
+import { BRAND_DISPLAY_NAME } from "@/config/branding";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 interface ReceiptItem {
@@ -25,67 +26,96 @@ export interface ReceiptSale {
   paymentMethod: string;
 }
 
+function paymentLabel(method: string): string {
+  if (method === "BANK_TRANSFER") return "BANK";
+  return method.replace(/_/g, " ");
+}
+
+/** 80 mm thermal ticket — screen preview matches print width. */
 export function SaleReceipt({ sale }: { sale: ReceiptSale }) {
   return (
-    <div className="mx-auto max-w-sm bg-white p-6 font-mono text-sm print:shadow-none shadow-md">
-      <div className="text-center mb-4">
-        <h1 className="text-lg font-bold">GONDAL</h1>
-        <p className="text-xs text-gray-500">Sales Invoice</p>
-        <div className="border-b border-dashed my-2" />
-        <p className="text-xs">Invoice: <strong>{sale.invoiceNo}</strong></p>
-        <p className="text-xs text-gray-500">{formatDateTime(sale.saleDate)}</p>
-        {sale.customer && <p className="text-xs mt-1">Customer: <strong>{sale.customer.name}</strong></p>}
+    <div
+      className="thermal-receipt box-border w-[80mm] max-w-[80mm] bg-white px-[3mm] py-[2mm] font-mono text-[11px] leading-tight text-black antialiased print:text-[11px] print:shadow-none"
+      style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}
+    >
+      <div className="border-b border-dashed border-black pb-2 text-center">
+        <p className="break-words text-[12px] font-bold uppercase leading-snug">{BRAND_DISPLAY_NAME}</p>
+        <p className="mt-1 text-[10px] font-semibold tracking-wide">SALES RECEIPT</p>
       </div>
 
-      <div className="border-b border-dashed mb-2" />
+      <div className="mt-2 space-y-0.5 border-b border-dashed border-black pb-2 text-[10px]">
+        <div className="flex justify-between gap-2">
+          <span className="shrink-0 text-gray-600">Invoice</span>
+          <span className="min-w-0 break-all text-right font-semibold">{sale.invoiceNo}</span>
+        </div>
+        <div className="flex justify-between gap-2">
+          <span className="shrink-0 text-gray-600">Date</span>
+          <span className="min-w-0 text-right">{formatDateTime(sale.saleDate)}</span>
+        </div>
+        {sale.customer ? (
+          <div className="pt-0.5">
+            <span className="text-gray-600">Customer: </span>
+            <span className="break-words font-medium">{sale.customer.name}</span>
+            {sale.customer.phone ? (
+              <div className="text-[9px] text-gray-600">{sale.customer.phone}</div>
+            ) : null}
+          </div>
+        ) : null}
+      </div>
 
-      <div className="space-y-1 mb-3">
+      <div className="mt-2 space-y-2 border-b border-dashed border-black pb-2">
         {sale.items.map((item, i) => {
-          const name = item.productName ?? item.product?.name ?? "";
+          const name = item.productName ?? item.product?.name ?? "Item";
           return (
-            <div key={i}>
-              <div className="flex justify-between">
-                <span className="text-xs truncate flex-1">{name}</span>
-                <span className="text-xs font-medium ml-2">{formatCurrency(item.totalAmount)}</span>
-              </div>
-              <div className="text-xs text-gray-400 pl-2">
-                {item.displayQty} {item.displayUnit} × {formatCurrency(item.unitPriceKg)}/unit
-                {item.discount > 0 && ` (${item.discount}% off)`}
+            <div key={i} className="border-b border-dotted border-gray-400 pb-2 last:border-0 last:pb-0">
+              <p className="break-words font-semibold">{name}</p>
+              <div className="mt-0.5 flex justify-between gap-2 text-[10px]">
+                <span className="min-w-0 text-gray-700">
+                  {item.displayQty} {item.displayUnit} × {formatCurrency(item.unitPriceKg)}
+                  {item.discount > 0 ? ` (−${item.discount}%)` : ""}
+                </span>
+                <span className="shrink-0 font-semibold">{formatCurrency(item.totalAmount)}</span>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="border-t border-dashed pt-2 space-y-0.5">
-        <div className="flex justify-between text-xs">
-          <span>Subtotal</span><span>{formatCurrency(sale.subtotal)}</span>
+      <div className="mt-2 space-y-1 text-[10px]">
+        <div className="flex justify-between gap-2">
+          <span>Subtotal</span>
+          <span>{formatCurrency(sale.subtotal)}</span>
         </div>
-        {Number(sale.discountAmount) > 0 && (
-          <div className="flex justify-between text-xs text-red-600">
-            <span>Discount</span><span>-{formatCurrency(sale.discountAmount)}</span>
+        {Number(sale.discountAmount) > 0 ? (
+          <div className="flex justify-between gap-2">
+            <span>Discount</span>
+            <span>−{formatCurrency(sale.discountAmount)}</span>
           </div>
-        )}
-        <div className="flex justify-between font-bold border-t pt-1 mt-1">
-          <span>Total</span><span>{formatCurrency(sale.totalAmount)}</span>
+        ) : null}
+        <div className="flex justify-between gap-2 border-t border-black pt-1 text-[12px] font-bold">
+          <span>TOTAL</span>
+          <span>{formatCurrency(sale.totalAmount)}</span>
         </div>
-        <div className="flex justify-between text-xs">
-          <span>Paid ({sale.paymentMethod})</span><span>{formatCurrency(sale.paidAmount)}</span>
+        <div className="flex justify-between gap-2">
+          <span className="min-w-0">Paid ({paymentLabel(sale.paymentMethod)})</span>
+          <span className="shrink-0">{formatCurrency(sale.paidAmount)}</span>
         </div>
-        {Number(sale.changeAmount) > 0 && (
-          <div className="flex justify-between text-xs text-green-600">
-            <span>Change</span><span>{formatCurrency(sale.changeAmount)}</span>
+        {Number(sale.changeAmount) > 0 ? (
+          <div className="flex justify-between gap-2 font-semibold">
+            <span>Change</span>
+            <span>{formatCurrency(sale.changeAmount)}</span>
           </div>
-        )}
-        {Number(sale.creditAmount) > 0 && (
-          <div className="flex justify-between text-xs text-orange-600 font-medium">
-            <span>Credit Balance</span><span>{formatCurrency(sale.creditAmount)}</span>
+        ) : null}
+        {Number(sale.creditAmount) > 0 ? (
+          <div className="flex justify-between gap-2 font-semibold">
+            <span>Credit</span>
+            <span>{formatCurrency(sale.creditAmount)}</span>
           </div>
-        )}
+        ) : null}
       </div>
 
-      <div className="text-center mt-4 text-xs text-gray-400 border-t pt-2">
-        Thank you for your business!
+      <div className="mt-3 border-t border-dashed border-black pt-2 text-center text-[9px] text-gray-600">
+        Thank you — please come again
       </div>
     </div>
   );
