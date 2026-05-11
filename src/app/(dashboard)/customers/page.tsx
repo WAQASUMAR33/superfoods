@@ -100,6 +100,7 @@ export default async function CustomersPage({
                 <TableRow>
                   <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Code</TableCell>
                   <TableCell>Name</TableCell>
+                  <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>Business Name</TableCell>
                   <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Phone</TableCell>
                   <TableCell sx={{ display: { xs: "none", md: "table-cell" } }} align="right">
                     Credit Limit
@@ -123,11 +124,9 @@ export default async function CustomersPage({
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
                           {c.name}
                         </Typography>
-                        {c.businessName ? (
-                          <Typography variant="caption" color="text.secondary">
-                            {c.businessName}
-                          </Typography>
-                        ) : null}
+                      </TableCell>
+                      <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>
+                        {c.businessName ?? "—"}
                       </TableCell>
                       <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }} color="text.secondary">
                         {c.phone ?? "—"}
@@ -163,7 +162,7 @@ export default async function CustomersPage({
                 })}
                 {customers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7}>
+                    <TableCell colSpan={8}>
                       <Typography sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
                         No customers match your filters.
                       </Typography>
