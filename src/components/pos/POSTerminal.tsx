@@ -20,7 +20,9 @@ interface Product {
 }
 interface Customer {
   id: number;
+  code: string;
   name: string;
+  businessName?: string | null;
   phone?: string | null;
   creditLimit: number;
 }
@@ -106,9 +108,15 @@ export function POSTerminal({ products, customers }: Props) {
     return p.name.toLowerCase().includes(q) || p.code.toLowerCase().includes(q) || (p.brand?.name?.toLowerCase().includes(q) ?? false);
   });
 
-  const filteredCustomers = customers.filter((c) =>
-    c.name.toLowerCase().includes(customerSearch.toLowerCase())
-  );
+  const filteredCustomers = customers.filter((c) => {
+    const q = customerSearch.toLowerCase();
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.code.toLowerCase().includes(q) ||
+      (c.businessName?.toLowerCase().includes(q) ?? false) ||
+      (c.phone?.toLowerCase().includes(q) ?? false)
+    );
+  });
 
   async function handleCheckout() {
     if (state.items.length === 0) return;
@@ -294,9 +302,16 @@ export function POSTerminal({ products, customers }: Props) {
               <div className="absolute left-3 right-3 top-full mt-1 z-10 bg-white border rounded-md shadow-lg max-h-40 overflow-y-auto">
                 {filteredCustomers.map((c) => (
                   <button key={c.id} onClick={() => { dispatch({ type: "SET_CUSTOMER", customerId: c.id, customerName: c.name }); setShowCustomerList(false); }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 flex justify-between">
-                    <span>{c.name}</span>
-                    <span className="text-xs text-gray-400">{c.phone}</span>
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50">
+                    <div className="flex justify-between">
+                      <span className="font-medium">{c.name}</span>
+                      <span className="text-xs text-gray-400">{c.phone}</span>
+                    </div>
+                    {c.businessName ? (
+                      <div className="text-xs text-gray-500">{c.businessName} &middot; {c.code}</div>
+                    ) : (
+                      <div className="text-xs text-gray-400">{c.code}</div>
+                    )}
                   </button>
                 ))}
               </div>

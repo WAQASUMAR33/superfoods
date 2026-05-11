@@ -36,7 +36,9 @@ export default async function POSPage() {
 
   const customersPlain = customers.map((c) => ({
     id: c.id,
+    code: c.code,
     name: c.name,
+    businessName: c.businessName ?? null,
     phone: c.phone ?? null,
     creditLimit: Number(c.creditLimit),
   }));
