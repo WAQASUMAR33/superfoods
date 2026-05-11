@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +12,7 @@ import { Unit } from "@/lib/units";
 import { errorMessageFromFetchResponse } from "@/lib/httpErrorMessage";
 import { formatCurrency } from "@/lib/utils";
 
-interface Supplier { id: number; name: string; }
+interface Supplier { id: number; code: string; name: string; phone?: string | null; }
 interface Product { id: number; code: string; name: string; purchasePrice: number; defaultUnit: string; }
 
 interface LineItem {
@@ -26,6 +26,9 @@ export function PurchaseForm({ suppliers, products }: { suppliers: Supplier[]; p
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [supplierSearch, setSupplierSearch] = useState("");
+  const [showSupplierList, setShowSupplierList] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [items, setItems] = useState<LineItem[]>([{ productId: 0, displayUnit: "KG", displayQty: 1, unitCostKg: 0 }]);
   const [form, setForm] = useState({
     invoiceNo: "",
@@ -112,14 +115,65 @@ export function PurchaseForm({ suppliers, products }: { suppliers: Supplier[]; p
             <Label>Purchase Date</Label>
             <Input type="date" value={form.purchaseDate} onChange={(e) => setForm({ ...form, purchaseDate: e.target.value })} className="mt-1" />
           </div>
-          <div>
+          <div className="relative">
             <Label>Supplier</Label>
-            <Select onValueChange={(v) => setForm({ ...form, supplierId: v })} required>
-              <SelectTrigger className="mt-1"><SelectValue placeholder="Select supplier" /></SelectTrigger>
-              <SelectContent>
-                {suppliers.map((s) => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+            <div className="relative mt-1">
+              <input
+                value={selectedSupplier ? selectedSupplier.name : supplierSearch}
+                onChange={(e) => {
+                  if (selectedSupplier) {
+                    setSelectedSupplier(null);
+                    setForm({ ...form, supplierId: "" });
+                  }
+                  setSupplierSearch(e.target.value);
+                  setShowSupplierList(true);
+                }}
+                onFocus={() => { if (!selectedSupplier) setShowSupplierList(true); }}
+                onBlur={() => setTimeout(() => setShowSupplierList(false), 150)}
+                placeholder="Search supplier by name, code or phone…"
+                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#0099D6]"
+              />
+              {selectedSupplier && (
+                <button
+                  type="button"
+                  onClick={() => { setSelectedSupplier(null); setForm({ ...form, supplierId: "" }); setSupplierSearch(""); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2"
+                >
+                  <X className="h-4 w-4 text-gray-400 hover:text-red-500" />
+                </button>
+              )}
+              {showSupplierList && !selectedSupplier && (() => {
+                const q = supplierSearch.toLowerCase();
+                const filtered = suppliers.filter((s) =>
+                  s.name.toLowerCase().includes(q) ||
+                  s.code.toLowerCase().includes(q) ||
+                  (s.phone?.toLowerCase().includes(q) ?? false)
+                );
+                return filtered.length > 0 ? (
+                  <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-40 overflow-y-auto rounded border bg-white shadow-lg">
+                    {filtered.map((s) => (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSupplier(s);
+                          setForm({ ...form, supplierId: String(s.id) });
+                          setShowSupplierList(false);
+                          setSupplierSearch("");
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50"
+                      >
+                        <div className="flex justify-between">
+                          <span className="font-medium">{s.name}</span>
+                          <span className="text-xs text-gray-400">{s.phone ?? ""}</span>
+                        </div>
+                        <div className="text-xs text-gray-400">{s.code}</div>
+                      </button>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
+            </div>
           </div>
           <div>
             <Label>Vehicle No.</Label>

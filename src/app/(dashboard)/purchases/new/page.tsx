@@ -22,7 +22,9 @@ export default async function NewPurchasePage() {
   /** Plain objects only — Prisma Decimals cannot cross the server/client boundary */
   const suppliersPlain = suppliers.map((s) => ({
     id: s.id,
+    code: s.code,
     name: s.name,
+    phone: s.phone ?? null,
   }));
 
   const productsPlain = products.map((p) => ({
