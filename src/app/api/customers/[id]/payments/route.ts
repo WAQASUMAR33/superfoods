@@ -55,12 +55,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
       const accounts = await getSystemAccounts(tx as Parameters<typeof getSystemAccounts>[0]);
 
+      const debitAccountId = parsed.data.method === "CASH" ? accounts["1001"] : accounts["1002"];
+      const methodLabel = parsed.data.method === "CASH" ? "Cash" : parsed.data.method === "CHEQUE" ? "Cheque" : "Bank transfer";
+
       const je = await postJournalEntry(tx as Parameters<typeof postJournalEntry>[0], {
-        description: `Customer receipt (on account) — ${customer.name}`,
+        description: `Customer receipt (${methodLabel}) — ${customer.name}`,
         referenceType: "CUSTOMER_RECEIPT",
         createdById: userId,
         lines: [
-          { accountId: accounts["1001"], type: "DEBIT", amount: parsed.data.amount, description: "Cash/bank" },
+          { accountId: debitAccountId, type: "DEBIT", amount: parsed.data.amount, description: methodLabel },
           { accountId: accounts["1100"], type: "CREDIT", amount: parsed.data.amount, description: "AR - customer" },
         ],
       });

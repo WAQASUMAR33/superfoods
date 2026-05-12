@@ -15,6 +15,7 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import PersonAddIcon from "@mui/icons-material/PersonAdd";
+import PaymentsIcon from "@mui/icons-material/Payments";
 import EditIcon from "@mui/icons-material/Edit";
 
 import { Header } from "@/components/layout/Header";
@@ -147,6 +148,13 @@ export default async function CustomersPage({
                       </TableCell>
                       <TableCell align="right">
                         <Box sx={{ display: "inline-flex", gap: 1 }}>
+                          {balance > 0 ? (
+                            <Link href={`/customers/${c.id}/receiving`} prefetch style={{ textDecoration: "none" }}>
+                              <Button size="small" variant="contained" color="success" startIcon={<PaymentsIcon />}>
+                                Receive
+                              </Button>
+                            </Link>
+                          ) : null}
                           <Link href={`/customers/${c.id}/edit`} prefetch style={{ textDecoration: "none" }}>
                             <Button size="small" startIcon={<EditIcon />}>
                               Edit

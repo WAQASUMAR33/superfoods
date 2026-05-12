@@ -30,6 +30,7 @@ const NAV_BASE: NavItem[] = [
   { label: "Sales History", href: "/sales", icon: Receipt },
   { label: "Sale returns", href: "/sales/returns", icon: Undo2 },
   { label: "Customers", href: "/customers", icon: Users },
+  { label: "Customer Receiving", href: "/customers/receiving", icon: Wallet },
   { divider: true, label: "Finance" },
   { label: "Accounts", href: "/accounts", icon: DollarSign },
   { label: "Expenses", href: "/expenses", icon: Wallet },
@@ -48,9 +49,9 @@ function isActivePath(pathname: string, href: string): boolean {
   if (pathname === href) return true;
   if (!pathname.startsWith(href + "/")) return false;
 
-  // Keep parent section highlighted for nested pages, except explicit returns routes.
   if (href === "/sales" && pathname.startsWith("/sales/returns")) return false;
   if (href === "/purchases" && pathname.startsWith("/purchases/returns")) return false;
+  if (href === "/customers" && pathname.startsWith("/customers/receiving")) return false;
   return true;
 }
 
