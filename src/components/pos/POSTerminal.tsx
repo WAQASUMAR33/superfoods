@@ -231,6 +231,45 @@ export function POSTerminal({ products, customers }: Props) {
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Cart */}
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+          {/* Customer picker */}
+          <div className="p-3 border-b relative">
+            <input
+              value={state.customerId ? state.customerName : customerSearch}
+              onChange={(e) => {
+                if (state.customerId) {
+                  dispatch({ type: "SET_CUSTOMER", customerId: null, customerName: "" });
+                }
+                setCustomerSearch(e.target.value);
+                setShowCustomerList(true);
+              }}
+              onFocus={() => setShowCustomerList(true)}
+              placeholder="Search customer (or walk-in)..."
+              className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            {state.customerId && (
+              <button onClick={() => dispatch({ type: "SET_CUSTOMER", customerId: null, customerName: "" })} className="absolute right-6 top-1/2 -translate-y-1/2">
+                <X className="h-4 w-4 text-gray-400" />
+              </button>
+            )}
+            {showCustomerList && !state.customerId && (
+              <div className="absolute left-3 right-3 top-full mt-1 z-10 bg-white border rounded-md shadow-lg max-h-40 overflow-y-auto">
+                {filteredCustomers.map((c) => (
+                  <button key={c.id} onClick={() => { dispatch({ type: "SET_CUSTOMER", customerId: c.id, customerName: c.name }); setShowCustomerList(false); }}
+                    className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50">
+                    <div className="flex justify-between">
+                      <span className="font-medium">{c.name}</span>
+                      <span className="text-xs text-gray-400">{c.phone}</span>
+                    </div>
+                    {c.businessName ? (
+                      <div className="text-xs text-gray-500">{c.businessName} &middot; {c.code}</div>
+                    ) : (
+                      <div className="text-xs text-gray-400">{c.code}</div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {/* Product search dropdown */}
           <div className="border-b bg-gray-50 p-3">
             <div className="relative">
@@ -288,45 +327,6 @@ export function POSTerminal({ products, customers }: Props) {
                 </div>
               )}
             </div>
-          </div>
-          {/* Customer picker */}
-          <div className="p-3 border-b relative">
-            <input
-              value={state.customerId ? state.customerName : customerSearch}
-              onChange={(e) => {
-                if (state.customerId) {
-                  dispatch({ type: "SET_CUSTOMER", customerId: null, customerName: "" });
-                }
-                setCustomerSearch(e.target.value);
-                setShowCustomerList(true);
-              }}
-              onFocus={() => setShowCustomerList(true)}
-              placeholder="Search customer (or walk-in)..."
-              className="w-full border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            {state.customerId && (
-              <button onClick={() => dispatch({ type: "SET_CUSTOMER", customerId: null, customerName: "" })} className="absolute right-6 top-1/2 -translate-y-1/2">
-                <X className="h-4 w-4 text-gray-400" />
-              </button>
-            )}
-            {showCustomerList && !state.customerId && (
-              <div className="absolute left-3 right-3 top-full mt-1 z-10 bg-white border rounded-md shadow-lg max-h-40 overflow-y-auto">
-                {filteredCustomers.map((c) => (
-                  <button key={c.id} onClick={() => { dispatch({ type: "SET_CUSTOMER", customerId: c.id, customerName: c.name }); setShowCustomerList(false); }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50">
-                    <div className="flex justify-between">
-                      <span className="font-medium">{c.name}</span>
-                      <span className="text-xs text-gray-400">{c.phone}</span>
-                    </div>
-                    {c.businessName ? (
-                      <div className="text-xs text-gray-500">{c.businessName} &middot; {c.code}</div>
-                    ) : (
-                      <div className="text-xs text-gray-400">{c.code}</div>
-                    )}
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Cart items */}
