@@ -29,6 +29,7 @@ export interface ReceiptSale {
 function paymentLabel(method: string): string {
   if (method === "BANK_TRANSFER") return "BANK";
   if (method === "CREDIT") return "RESTO";
+  if (method === "SPLIT") return "SPLIT";
   return method.replace(/_/g, " ");
 }
 

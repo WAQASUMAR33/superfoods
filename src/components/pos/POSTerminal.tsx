@@ -92,7 +92,7 @@ interface Props {
 }
 
 export function POSTerminal({ products, customers }: Props) {
-  const { state, dispatch, subtotal, discountAmount, total, change, resto } = useCart();
+  const { state, dispatch, subtotal, discountAmount, total, paidAmount, change, resto, paymentMethod } = useCart();
   const [search, setSearch] = useState("");
   const [showProductList, setShowProductList] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
@@ -134,8 +134,11 @@ export function POSTerminal({ products, customers }: Props) {
         discount: i.discount,
       })),
       discountAmount,
-      paymentMethod: state.paymentMethod,
-      paidAmount: state.paidAmount,
+      paymentMethod,
+      paidAmount,
+      cashAmount: state.cashAmount,
+      chequeAmount: state.chequeAmount,
+      bankAmount: state.bankAmount,
       notes: state.notes,
     };
 
@@ -409,32 +412,31 @@ export function POSTerminal({ products, customers }: Props) {
             </div>
 
             <div className="space-y-1.5">
-              <div className="flex gap-1">
-                {(["CASH", "CREDIT", "BANK_TRANSFER"] as const).map((m) => {
-                  const label = m === "BANK_TRANSFER" ? "BANK" : m === "CREDIT" ? "RESTO" : m;
-                  return (
-                    <button key={m} onClick={() => dispatch({ type: "SET_PAYMENT_METHOD", method: m })}
-                      className={`flex-1 rounded py-1 text-xs font-medium border ${state.paymentMethod === m ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-300"}`}>
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Payment split</div>
+              {([
+                { label: "Cash", action: "SET_CASH_AMOUNT" as const, value: state.cashAmount },
+                { label: "Cheque", action: "SET_CHEQUE_AMOUNT" as const, value: state.chequeAmount },
+                { label: "Bank", action: "SET_BANK_AMOUNT" as const, value: state.bankAmount },
+              ]).map((m) => (
+                <div key={m.label} className="flex items-center gap-2">
+                  <span className="w-14 text-xs text-gray-500">{m.label}</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    autoComplete="off"
+                    value={m.value || ""}
+                    onChange={(e) => {
+                      const v = e.target.value.replace(/[^\d.]/g, "");
+                      dispatch({ type: m.action, amount: Number(v) || 0 });
+                    }}
+                    placeholder="0"
+                    className="flex-1 rounded border px-2 py-1 text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              ))}
 
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Received</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  autoComplete="off"
-                  value={state.paidAmount || ""}
-                  onChange={(e) => {
-                    const v = e.target.value.replace(/[^\d.]/g, "");
-                    dispatch({ type: "SET_PAID_AMOUNT", amount: Number(v) || 0 });
-                  }}
-                  placeholder={formatCurrency(total)}
-                  className="flex-1 rounded border px-2 py-1 text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+              <div className="flex justify-between text-xs text-gray-500 pt-1 border-t">
+                <span>Paid</span><span className="font-medium">{formatCurrency(paidAmount)}</span>
               </div>
 
               {resto > 0 && (

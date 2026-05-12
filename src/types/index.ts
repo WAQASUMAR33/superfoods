@@ -58,8 +58,11 @@ export const SaleSchema = z.object({
   customerId: z.number().optional(),
   items: z.array(SaleItemSchema).min(1),
   discountAmount: z.number().min(0).default(0),
-  paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "CHEQUE", "CREDIT"]),
+  paymentMethod: z.enum(["CASH", "BANK_TRANSFER", "CHEQUE", "CREDIT", "SPLIT"]),
   paidAmount: z.number().min(0),
+  cashAmount: z.number().min(0).default(0),
+  chequeAmount: z.number().min(0).default(0),
+  bankAmount: z.number().min(0).default(0),
   notes: z.string().optional(),
 });
 
@@ -128,8 +131,9 @@ export interface CartState {
   customerId: number | null;
   customerName: string;
   globalDiscount: number;
-  paymentMethod: "CASH" | "BANK_TRANSFER" | "CHEQUE" | "CREDIT";
-  paidAmount: number;
+  cashAmount: number;
+  chequeAmount: number;
+  bankAmount: number;
   notes: string;
 }
 
@@ -142,7 +146,8 @@ export type CartAction =
   | { type: "SET_ITEM_RATE"; productId: number; rate: number }
   | { type: "SET_CUSTOMER"; customerId: number | null; customerName: string }
   | { type: "SET_GLOBAL_DISCOUNT"; discount: number }
-  | { type: "SET_PAYMENT_METHOD"; method: CartState["paymentMethod"] }
-  | { type: "SET_PAID_AMOUNT"; amount: number }
+  | { type: "SET_CASH_AMOUNT"; amount: number }
+  | { type: "SET_CHEQUE_AMOUNT"; amount: number }
+  | { type: "SET_BANK_AMOUNT"; amount: number }
   | { type: "SET_NOTES"; notes: string }
   | { type: "CLEAR_CART" };

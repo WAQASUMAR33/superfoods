@@ -58,10 +58,14 @@ export async function POST(req: NextRequest) {
     );
 
     const totalAmount = subtotal - data.discountAmount;
-    const isCredit = data.paymentMethod === "CREDIT";
-    const creditAmount = isCredit ? totalAmount : Math.max(0, totalAmount - data.paidAmount);
-    const changeAmount = !isCredit ? Math.max(0, data.paidAmount - totalAmount) : 0;
-    const status = isCredit ? "CREDIT" : creditAmount > 0 ? "PARTIALLY_PAID" : "COMPLETED";
+    const isFullResto = data.paidAmount === 0 && data.paymentMethod === "CREDIT";
+    const creditAmount = isFullResto ? totalAmount : Math.max(0, totalAmount - data.paidAmount);
+    const changeAmount = !isFullResto ? Math.max(0, data.paidAmount - totalAmount) : 0;
+    const status = isFullResto ? "CREDIT" : creditAmount > 0 ? "PARTIALLY_PAID" : "COMPLETED";
+
+    const splitNote = data.paymentMethod === "SPLIT"
+      ? `[Split: Cash ${data.cashAmount ?? 0}, Cheque ${data.chequeAmount ?? 0}, Bank ${data.bankAmount ?? 0}]`
+      : "";
 
     const count = await tx.sale.count();
     const invoiceNo = `INV-${new Date().getFullYear()}-${String(count + 1).padStart(5, "0")}`;
@@ -75,11 +79,11 @@ export async function POST(req: NextRequest) {
         subtotal,
         discountAmount: data.discountAmount,
         totalAmount,
-        paidAmount: isCredit ? 0 : data.paidAmount,
+        paidAmount: isFullResto ? 0 : data.paidAmount,
         creditAmount,
         changeAmount,
         paymentMethod: data.paymentMethod,
-        notes: data.notes,
+        notes: [data.notes, splitNote].filter(Boolean).join(" ") || undefined,
         items: {
           create: itemsWithKg.map((item) => ({
             productId: item.productId,
@@ -109,7 +113,7 @@ export async function POST(req: NextRequest) {
 
     const accounts = await getSystemAccounts(tx as Parameters<typeof getSystemAccounts>[0]);
 
-    if (isCredit && data.customerId) {
+    if (isFullResto && data.customerId) {
       await postJournalEntry(tx as Parameters<typeof postJournalEntry>[0], {
         description: `Credit sale ${invoiceNo}`,
         saleId: sale.id,
@@ -127,14 +131,31 @@ export async function POST(req: NextRequest) {
         saleId: sale.id,
       });
     } else {
+      const jeLines: { accountId: number; type: "DEBIT" | "CREDIT"; amount: number }[] = [];
+      if (data.paidAmount > 0) {
+        jeLines.push({ accountId: accounts["1001"], type: "DEBIT", amount: Math.min(data.paidAmount, totalAmount) });
+      }
+      if (creditAmount > 0 && data.customerId) {
+        jeLines.push({ accountId: accounts["1100"], type: "DEBIT", amount: creditAmount });
+      }
+      jeLines.push({ accountId: accounts["4001"], type: "CREDIT", amount: totalAmount });
+
       await postJournalEntry(tx as Parameters<typeof postJournalEntry>[0], {
-        description: `Cash sale ${invoiceNo}`,
+        description: `Sale ${invoiceNo}${data.paymentMethod === "SPLIT" ? " (split payment)" : ""}`,
         saleId: sale.id,
-        lines: [
-          { accountId: accounts["1001"], type: "DEBIT", amount: totalAmount },
-          { accountId: accounts["4001"], type: "CREDIT", amount: totalAmount },
-        ],
+        lines: jeLines,
       });
+
+      if (creditAmount > 0 && data.customerId) {
+        await updatePartyLedger(tx as Parameters<typeof updatePartyLedger>[0], {
+          customerId: data.customerId,
+          type: "DEBIT",
+          amount: creditAmount,
+          description: `Sale ${invoiceNo} (resto)`,
+          referenceType: "SALE",
+          saleId: sale.id,
+        });
+      }
     }
 
     return sale;

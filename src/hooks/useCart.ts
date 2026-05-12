@@ -7,8 +7,9 @@ const initialState: CartState = {
   customerId: null,
   customerName: "",
   globalDiscount: 0,
-  paymentMethod: "CASH",
-  paidAmount: 0,
+  cashAmount: 0,
+  chequeAmount: 0,
+  bankAmount: 0,
   notes: "",
 };
 
@@ -87,11 +88,14 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     case "SET_GLOBAL_DISCOUNT":
       return { ...state, globalDiscount: action.discount };
 
-    case "SET_PAYMENT_METHOD":
-      return { ...state, paymentMethod: action.method };
+    case "SET_CASH_AMOUNT":
+      return { ...state, cashAmount: action.amount };
 
-    case "SET_PAID_AMOUNT":
-      return { ...state, paidAmount: action.amount };
+    case "SET_CHEQUE_AMOUNT":
+      return { ...state, chequeAmount: action.amount };
+
+    case "SET_BANK_AMOUNT":
+      return { ...state, bankAmount: action.amount };
 
     case "SET_NOTES":
       return { ...state, notes: action.notes };
@@ -110,8 +114,21 @@ export function useCart() {
   const subtotal = state.items.reduce((sum, i) => sum + i.lineTotal, 0);
   const discountAmount = Math.max(0, Math.min(state.globalDiscount, subtotal));
   const total = subtotal - discountAmount;
-  const change = Math.max(0, state.paidAmount - total);
-  const resto = state.paidAmount < total ? total - state.paidAmount : 0;
+  const paidAmount = state.cashAmount + state.chequeAmount + state.bankAmount;
+  const change = Math.max(0, paidAmount - total);
+  const resto = paidAmount < total ? total - paidAmount : 0;
 
-  return { state, dispatch, subtotal, discountAmount, total, change, resto };
+  const methodsUsed = [
+    state.cashAmount > 0 && "CASH",
+    state.chequeAmount > 0 && "CHEQUE",
+    state.bankAmount > 0 && "BANK_TRANSFER",
+  ].filter(Boolean) as string[];
+  const paymentMethod: string =
+    methodsUsed.length === 0
+      ? resto >= total ? "CREDIT" : "CASH"
+      : methodsUsed.length === 1
+        ? methodsUsed[0]
+        : "SPLIT";
+
+  return { state, dispatch, subtotal, discountAmount, total, paidAmount, change, resto, paymentMethod };
 }
