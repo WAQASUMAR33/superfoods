@@ -28,6 +28,7 @@ export interface ReceiptSale {
 
 function paymentLabel(method: string): string {
   if (method === "BANK_TRANSFER") return "BANK";
+  if (method === "CREDIT") return "RESTO";
   return method.replace(/_/g, " ");
 }
 
@@ -108,7 +109,7 @@ export function SaleReceipt({ sale }: { sale: ReceiptSale }) {
         ) : null}
         {Number(sale.creditAmount) > 0 ? (
           <div className="flex justify-between gap-2 font-semibold">
-            <span>Credit</span>
+            <span>Resto</span>
             <span>{formatCurrency(sale.creditAmount)}</span>
           </div>
         ) : null}

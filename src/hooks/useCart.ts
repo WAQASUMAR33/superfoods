@@ -110,7 +110,8 @@ export function useCart() {
   const subtotal = state.items.reduce((sum, i) => sum + i.lineTotal, 0);
   const discountAmount = Math.max(0, Math.min(state.globalDiscount, subtotal));
   const total = subtotal - discountAmount;
-  const change = state.paymentMethod === "CASH" ? Math.max(0, state.paidAmount - total) : 0;
+  const change = Math.max(0, state.paidAmount - total);
+  const resto = state.paidAmount < total ? total - state.paidAmount : 0;
 
-  return { state, dispatch, subtotal, discountAmount, total, change };
+  return { state, dispatch, subtotal, discountAmount, total, change, resto };
 }

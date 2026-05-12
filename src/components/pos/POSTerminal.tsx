@@ -92,7 +92,7 @@ interface Props {
 }
 
 export function POSTerminal({ products, customers }: Props) {
-  const { state, dispatch, subtotal, discountAmount, total, change } = useCart();
+  const { state, dispatch, subtotal, discountAmount, total, change, resto } = useCart();
   const [search, setSearch] = useState("");
   const [showProductList, setShowProductList] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
@@ -410,32 +410,38 @@ export function POSTerminal({ products, customers }: Props) {
 
             <div className="space-y-1.5">
               <div className="flex gap-1">
-                {(["CASH", "CREDIT", "BANK_TRANSFER"] as const).map((m) => (
-                  <button key={m} onClick={() => dispatch({ type: "SET_PAYMENT_METHOD", method: m })}
-                    className={`flex-1 rounded py-1 text-xs font-medium border ${state.paymentMethod === m ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-300"}`}>
-                    {m === "BANK_TRANSFER" ? "BANK" : m}
-                  </button>
-                ))}
+                {(["CASH", "CREDIT", "BANK_TRANSFER"] as const).map((m) => {
+                  const label = m === "BANK_TRANSFER" ? "BANK" : m === "CREDIT" ? "RESTO" : m;
+                  return (
+                    <button key={m} onClick={() => dispatch({ type: "SET_PAYMENT_METHOD", method: m })}
+                      className={`flex-1 rounded py-1 text-xs font-medium border ${state.paymentMethod === m ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-600 border-gray-300"}`}>
+                      {label}
+                    </button>
+                  );
+                })}
               </div>
 
-              {state.paymentMethod !== "CREDIT" && (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-gray-500">Received</span>
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    autoComplete="off"
-                    value={state.paidAmount || ""}
-                    onChange={(e) => {
-                      const v = e.target.value.replace(/[^\d.]/g, "");
-                      dispatch({ type: "SET_PAID_AMOUNT", amount: Number(v) || 0 });
-                    }}
-                    placeholder={formatCurrency(total)}
-                    className="flex-1 rounded border px-2 py-1 text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Received</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  autoComplete="off"
+                  value={state.paidAmount || ""}
+                  onChange={(e) => {
+                    const v = e.target.value.replace(/[^\d.]/g, "");
+                    dispatch({ type: "SET_PAID_AMOUNT", amount: Number(v) || 0 });
+                  }}
+                  placeholder={formatCurrency(total)}
+                  className="flex-1 rounded border px-2 py-1 text-sm text-right tabular-nums focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {resto > 0 && (
+                <div className="flex justify-between text-sm font-medium text-orange-700 bg-orange-50 rounded px-2 py-1">
+                  <span>Resto</span><span>{formatCurrency(resto)}</span>
                 </div>
               )}
-
               {change > 0 && (
                 <div className="flex justify-between text-sm font-medium text-green-700 bg-green-50 rounded px-2 py-1">
                   <span>Change</span><span>{formatCurrency(change)}</span>
