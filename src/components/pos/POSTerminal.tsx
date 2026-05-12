@@ -94,6 +94,7 @@ interface Props {
 export function POSTerminal({ products, customers }: Props) {
   const { state, dispatch, subtotal, discountAmount, total, change } = useCart();
   const [search, setSearch] = useState("");
+  const [showProductList, setShowProductList] = useState(false);
   const [customerSearch, setCustomerSearch] = useState("");
   const [showCustomerList, setShowCustomerList] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -227,57 +228,67 @@ export function POSTerminal({ products, customers }: Props) {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden bg-gray-100">
-      <div className="flex flex-1 flex-col overflow-hidden md:flex-row">
-        {/* Left: Product search + grid */}
-        <div className="flex min-h-0 flex-col overflow-hidden md:flex-1">
-          <div className="bg-white border-b p-3 flex gap-2 items-center">
-            <div className="relative flex-1">
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Cart */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-white">
+          {/* Product search dropdown */}
+          <div className="border-b bg-gray-50 p-3">
+            <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by name, code, or brand…"
-                className="w-full pl-9 pr-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => { setSearch(e.target.value); setShowProductList(true); }}
+                onFocus={() => { if (search) setShowProductList(true); }}
+                onBlur={() => setTimeout(() => setShowProductList(false), 150)}
+                placeholder="Search product by name, code, or brand…"
+                className="w-full pl-9 pr-8 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               {search && (
-                <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+                <button onClick={() => { setSearch(""); setShowProductList(false); }} className="absolute right-3 top-1/2 -translate-y-1/2">
                   <X className="h-4 w-4 text-gray-400" />
                 </button>
               )}
+              {showProductList && search && filtered.length > 0 && (
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 max-h-64 overflow-y-auto rounded border bg-white shadow-lg">
+                  {filtered.map((p) => {
+                    const isOut = p.stockKg <= 0;
+                    const isLow = p.stockKg <= p.lowStockThresholdKg;
+                    return (
+                      <button
+                        key={p.id}
+                        disabled={isOut}
+                        onClick={() => {
+                          dispatch({ type: "ADD_ITEM", product: { id: p.id, code: p.code, name: p.name, salePrice: p.salePrice, stockKg: p.stockKg, defaultUnit: p.defaultUnit as Unit } });
+                          setSearch("");
+                          setShowProductList(false);
+                        }}
+                        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 truncate">{p.name}</span>
+                            {p.brand ? <span className="text-xs text-gray-400 truncate">{p.brand.name}</span> : null}
+                          </div>
+                          <span className="text-xs text-gray-400 font-mono">{p.code}</span>
+                        </div>
+                        <div className="shrink-0 text-right">
+                          <div className="text-sm font-semibold text-blue-600">{formatCurrency(p.salePrice)}</div>
+                          <div className={`text-xs font-medium ${isOut ? "text-red-600" : isLow ? "text-yellow-600" : "text-green-600"}`}>
+                            {isOut ? "OUT" : formatDisplay(p.stockKg, p.defaultUnit as Unit)}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {showProductList && search && filtered.length === 0 && (
+                <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded border bg-white p-3 text-center text-sm text-gray-400 shadow-lg">
+                  No products found
+                </div>
+              )}
             </div>
-            <span className="text-xs text-gray-400 whitespace-nowrap">{filtered.length} items</span>
           </div>
-
-          <div className="flex-1 overflow-y-auto p-3 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 content-start">
-            {filtered.map((p) => {
-              const isLow = p.stockKg <= p.lowStockThresholdKg;
-              const isOut = p.stockKg <= 0;
-              return (
-                <button
-                  key={p.id}
-                  onClick={() => {
-                    dispatch({ type: "ADD_ITEM", product: { id: p.id, code: p.code, name: p.name, salePrice: p.salePrice, stockKg: p.stockKg, defaultUnit: p.defaultUnit as Unit } });
-                  }}
-                  disabled={isOut}
-                  className={`rounded-lg border bg-white p-3 text-left shadow-sm hover:border-blue-400 hover:shadow-md transition-all disabled:opacity-50 disabled:cursor-not-allowed ${isOut ? "border-red-200" : isLow ? "border-yellow-300" : "border-gray-200"}`}
-                >
-                  <p className="text-xs text-gray-400 font-mono">{p.code}</p>
-                  <p className="text-sm font-semibold text-gray-900 mt-0.5 leading-tight">{p.name}</p>
-                  {p.brand ? <p className="text-xs text-gray-500 truncate">{p.brand.name}</p> : null}
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="text-sm font-bold text-blue-600">{formatCurrency(p.salePrice)}<span className="text-xs font-normal text-gray-400">/unit</span></span>
-                    <span className={`text-xs font-medium ${isOut ? "text-red-600" : isLow ? "text-yellow-600" : "text-green-600"}`}>
-                      {isOut ? "OUT" : formatDisplay(p.stockKg, p.defaultUnit as Unit)}
-                    </span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Right: Cart */}
-        <div className="flex max-h-[50vh] min-h-0 flex-col overflow-hidden border-t bg-white md:max-h-none md:w-96 md:flex-none md:border-l md:border-t-0">
           {/* Customer picker */}
           <div className="p-3 border-b relative">
             <input
