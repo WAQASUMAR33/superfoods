@@ -12,8 +12,6 @@ import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
-import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-
 import { formatCurrency } from "@/lib/utils";
 
 const METHODS = ["CASH", "BANK_TRANSFER", "CHEQUE"] as const;
@@ -21,32 +19,26 @@ const METHODS = ["CASH", "BANK_TRANSFER", "CHEQUE"] as const;
 type Props = {
   customerId: number;
   customerName: string;
-  /** Current receivable on the customer party ledger (not tied to a specific invoice). */
   ledgerBalanceDue: number;
 };
 
-/**
- * General customer receipt: reduces AR and party ledger only — no invoice allocation.
- */
 export function CustomerReceivingPanel({ customerId, customerName, ledgerBalanceDue }: Props) {
   const router = useRouter();
-  const [amount, setAmount] = useState<string>(() => (ledgerBalanceDue > 0 ? String(ledgerBalanceDue) : ""));
+  const [amount, setAmount] = useState<string>("");
   const [method, setMethod] = useState<(typeof METHODS)[number]>("CASH");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    setSuccess("");
     const amt = Number(amount);
     if (!Number.isFinite(amt) || amt <= 0) {
       setError("Enter a valid receipt amount.");
-      return;
-    }
-    if (amt > ledgerBalanceDue + 0.005) {
-      setError(`Amount cannot exceed balance due (${formatCurrency(ledgerBalanceDue)}).`);
       return;
     }
 
@@ -67,7 +59,10 @@ export function CustomerReceivingPanel({ customerId, customerName, ledgerBalance
         setError(typeof payload.error === "string" ? payload.error : "Receipt failed.");
         return;
       }
-      router.push(`/customers/${customerId}`);
+      setSuccess(`Receipt of ${formatCurrency(amt)} recorded successfully (${payload.entryNo}).`);
+      setAmount("");
+      setReference("");
+      setNotes("");
       router.refresh();
     } catch {
       setError("Network error.");
@@ -76,42 +71,24 @@ export function CustomerReceivingPanel({ customerId, customerName, ledgerBalance
     }
   }
 
-  if (ledgerBalanceDue <= 0.005) {
-    return (
-      <Card>
-        <CardContent>
-          <Stack spacing={2}>
-            <Typography variant="h6">General receipt</Typography>
-            <Typography variant="body2" color="text.secondary">
-              There is no receivable balance on the party ledger for {customerName}. General receipts apply to the
-              customer account only (not to a specific invoice).
-            </Typography>
-            <Box>
-              <Link href={`/customers/${customerId}`} style={{ textDecoration: "none", display: "inline-flex" }}>
-                <Button component="span" startIcon={<ArrowBackIcon />} variant="outlined" size="small">
-                  Back to customer
-                </Button>
-              </Link>
-            </Box>
-          </Stack>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
     <Card component="form" onSubmit={(e) => void handleSubmit(e)}>
       <CardContent>
         <Stack spacing={2}>
-          <Typography variant="h6">General receipt</Typography>
+          <Typography variant="h6">Receive Payment</Typography>
           <Typography variant="body2" color="text.secondary">
-            Record cash or bank received from {customerName}. This posts to the general ledger (cash/bank vs accounts
-            receivable) and updates the <strong>customer party ledger</strong>. It is <strong>not</strong> allocated to a
-            specific invoice number.
+            Record a general payment received from <strong>{customerName}</strong>. This creates a journal entry
+            (DR Cash/Bank, CR Accounts Receivable) and updates the customer party ledger.
           </Typography>
-          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-            Balance due (ledger): {formatCurrency(ledgerBalanceDue)}
-          </Typography>
+
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            <Box sx={{ px: 2, py: 1, bgcolor: ledgerBalanceDue > 0 ? "warning.50" : "success.50", borderRadius: 1, border: 1, borderColor: ledgerBalanceDue > 0 ? "warning.200" : "success.200" }}>
+              <Typography variant="caption" color="text.secondary">Current Balance Due</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 700, color: ledgerBalanceDue > 0 ? "warning.main" : "success.main" }}>
+                {formatCurrency(ledgerBalanceDue)}
+              </Typography>
+            </Box>
+          </Box>
 
           {error ? (
             <Alert severity="error" onClose={() => setError("")}>
@@ -119,13 +96,20 @@ export function CustomerReceivingPanel({ customerId, customerName, ledgerBalance
             </Alert>
           ) : null}
 
+          {success ? (
+            <Alert severity="success" onClose={() => setSuccess("")}>
+              {success}
+            </Alert>
+          ) : null}
+
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
               required
-              label="Amount (EUR)"
+              label="Amount"
               type="number"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
+              placeholder="Enter amount"
               sx={{ flex: 1 }}
               slotProps={{ htmlInput: { min: 0.01, step: 0.01 } }}
             />
@@ -154,11 +138,11 @@ export function CustomerReceivingPanel({ customerId, customerName, ledgerBalance
           <Stack direction="row" spacing={1} sx={{ justifyContent: "flex-end" }}>
             <Link href={`/customers/${customerId}`} style={{ textDecoration: "none", display: "inline-flex" }}>
               <Button component="span" variant="outlined" size="small">
-                Cancel
+                Back to customer
               </Button>
             </Link>
             <Button type="submit" variant="contained" disabled={saving}>
-              {saving ? "Saving…" : "Record general receipt"}
+              {saving ? "Saving…" : "Record Payment"}
             </Button>
           </Stack>
         </Stack>

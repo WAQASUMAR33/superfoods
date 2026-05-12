@@ -6,9 +6,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { postJournalEntry, getSystemAccounts, updatePartyLedger } from "@/lib/double-entry";
-import { customerRunningBalanceInTx } from "@/lib/partyBalances";
 import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
-import { formatCurrency } from "@/lib/utils";
 
 const BodySchema = z.object({
   amount: z.number().min(0.01),
@@ -45,14 +43,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      const balanceDue = await customerRunningBalanceInTx(tx, customerId);
-      if (balanceDue <= 0.005) {
-        throw new Error("No receivable balance on the customer ledger for this receipt.");
-      }
-      if (parsed.data.amount > balanceDue + 0.005) {
-        throw new Error(`Amount cannot exceed balance due (${formatCurrency(balanceDue)}).`);
-      }
-
       const accounts = await getSystemAccounts(tx as Parameters<typeof getSystemAccounts>[0]);
 
       const debitAccountId = parsed.data.method === "CASH" ? accounts["1001"] : accounts["1002"];
@@ -85,7 +75,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json(result, { status: 201 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Could not record receipt";
-    const status = /cannot exceed|No receivable balance/i.test(message) ? 400 : 500;
+    const status = 500;
     return NextResponse.json({ error: message }, { status });
   }
 }

@@ -59,12 +59,12 @@ export default async function CustomerReceivingListPage({
 
   const balanceMap = await lastRunningBalancesByCustomerId(prisma, customers);
 
-  const withBalance = customers
+  const allCustomers = customers
     .map((c) => ({ ...c, balance: balanceMap[c.id] ?? 0 }))
-    .filter((c) => c.balance > 0.005)
     .sort((a, b) => b.balance - a.balance);
 
-  const totalReceivable = withBalance.reduce((sum, c) => sum + c.balance, 0);
+  const totalReceivable = allCustomers.reduce((sum, c) => sum + Math.max(0, c.balance), 0);
+  const withBalanceCount = allCustomers.filter((c) => c.balance > 0.005).length;
 
   return (
     <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0, flex: 1 }}>
@@ -74,7 +74,7 @@ export default async function CustomerReceivingListPage({
           <Box sx={{ mb: 2, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 2 }}>
             <Box>
               <Typography variant="body2" color="text.secondary">
-                {withBalance.length} customers with outstanding balance
+                {withBalanceCount} customers with outstanding balance · {allCustomers.length} total
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 700 }}>
                 Total Receivable: {formatCurrency(totalReceivable)}
@@ -103,12 +103,12 @@ export default async function CustomerReceivingListPage({
                   <TableCell>Customer</TableCell>
                   <TableCell sx={{ display: { xs: "none", md: "table-cell" } }}>Business</TableCell>
                   <TableCell sx={{ display: { xs: "none", sm: "table-cell" } }}>Phone</TableCell>
-                  <TableCell align="right">Balance Due</TableCell>
+                  <TableCell align="right">Balance</TableCell>
                   <TableCell align="right" width={120} />
                 </TableRow>
               </TableHead>
               <TableBody>
-                {withBalance.map((c) => (
+                {allCustomers.map((c) => (
                   <TableRow key={c.id} hover>
                     <TableCell sx={{ display: { xs: "none", sm: "table-cell" }, fontFamily: "monospace", fontSize: 12 }}>
                       {c.code}
@@ -127,13 +127,12 @@ export default async function CustomerReceivingListPage({
                       {c.phone ?? "—"}
                     </TableCell>
                     <TableCell align="right">
-                      <Chip
-                        label={formatCurrency(c.balance)}
-                        size="small"
-                        color="warning"
-                        variant="outlined"
-                        sx={{ fontWeight: 700 }}
-                      />
+                      <Typography
+                        variant="body2"
+                        sx={{ fontWeight: 600, color: c.balance > 0.005 ? "warning.main" : "success.main" }}
+                      >
+                        {formatCurrency(c.balance)}
+                      </Typography>
                     </TableCell>
                     <TableCell align="right">
                       <Link href={`/customers/${c.id}/receiving`} prefetch style={{ textDecoration: "none" }}>
@@ -144,11 +143,11 @@ export default async function CustomerReceivingListPage({
                     </TableCell>
                   </TableRow>
                 ))}
-                {withBalance.length === 0 && (
+                {allCustomers.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={6}>
                       <Typography sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
-                        {q ? "No customers with balance match your search." : "All customers are fully paid — no outstanding receivables."}
+                        {q ? "No customers match your search." : "No customers found."}
                       </Typography>
                     </TableCell>
                   </TableRow>
