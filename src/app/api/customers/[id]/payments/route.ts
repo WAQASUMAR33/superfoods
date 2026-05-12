@@ -9,16 +9,13 @@ import { postJournalEntry, getSystemAccounts, updatePartyLedger } from "@/lib/do
 import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 
 const BodySchema = z.object({
-  amount: z.number().min(0.01),
-  method: z.enum(["CASH", "BANK_TRANSFER", "CHEQUE"]),
+  cashAmount: z.number().min(0).default(0),
+  chequeAmount: z.number().min(0).default(0),
+  bankAmount: z.number().min(0).default(0),
   reference: z.string().optional(),
   notes: z.string().optional(),
 });
 
-/**
- * General customer receipt (not allocated to a sale/invoice).
- * DR cash/bank, CR AR, and CREDIT customer party ledger up to current ledger balance due.
- */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -38,6 +35,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const parsed = BodySchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+  const { cashAmount, chequeAmount, bankAmount, reference, notes } = parsed.data;
+  const totalAmount = cashAmount + chequeAmount + bankAmount;
+
+  if (totalAmount < 0.01) {
+    return NextResponse.json({ error: "Total payment must be at least 0.01" }, { status: 400 });
+  }
+
   const customer = await prisma.customer.findUnique({ where: { id: customerId }, select: { id: true, name: true } });
   if (!customer) return NextResponse.json({ error: "Customer not found" }, { status: 404 });
 
@@ -45,26 +49,39 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const result = await prisma.$transaction(async (tx) => {
       const accounts = await getSystemAccounts(tx as Parameters<typeof getSystemAccounts>[0]);
 
-      const debitAccountId = parsed.data.method === "CASH" ? accounts["1001"] : accounts["1002"];
-      const methodLabel = parsed.data.method === "CASH" ? "Cash" : parsed.data.method === "CHEQUE" ? "Cheque" : "Bank transfer";
+      const methods: { amount: number; accountId: number; label: string }[] = [];
+      if (cashAmount > 0) methods.push({ amount: cashAmount, accountId: accounts["1001"], label: "Cash" });
+      if (chequeAmount > 0) methods.push({ amount: chequeAmount, accountId: accounts["1002"], label: "Cheque" });
+      if (bankAmount > 0) methods.push({ amount: bankAmount, accountId: accounts["1002"], label: "Bank transfer" });
+
+      const methodSummary = methods.map((m) => m.label).join(" + ");
+
+      const debitLines = methods.map((m) => ({
+        accountId: m.accountId,
+        type: "DEBIT" as const,
+        amount: m.amount,
+        description: m.label,
+      }));
 
       const je = await postJournalEntry(tx as Parameters<typeof postJournalEntry>[0], {
-        description: `Customer receipt (${methodLabel}) — ${customer.name}`,
+        description: `Customer receipt (${methodSummary}) — ${customer.name}`,
         referenceType: "CUSTOMER_RECEIPT",
         createdById: userId,
         lines: [
-          { accountId: debitAccountId, type: "DEBIT", amount: parsed.data.amount, description: methodLabel },
-          { accountId: accounts["1100"], type: "CREDIT", amount: parsed.data.amount, description: "AR - customer" },
+          ...debitLines,
+          { accountId: accounts["1100"], type: "CREDIT" as const, amount: totalAmount, description: "AR - customer" },
         ],
       });
+
+      const ledgerDesc =
+        notes?.trim() ||
+        `Receipt [${methodSummary}]${reference ? ` ref: ${reference}` : ""} — JE ${je.entryNo}`;
 
       await updatePartyLedger(tx as Parameters<typeof updatePartyLedger>[0], {
         customerId,
         type: "CREDIT",
-        amount: parsed.data.amount,
-        description:
-          parsed.data.notes?.trim() ||
-          `On-account receipt${parsed.data.reference ? ` (${parsed.data.reference})` : ""} — JE ${je.entryNo}`,
+        amount: totalAmount,
+        description: ledgerDesc,
         referenceType: "CUSTOMER_RECEIPT",
         referenceId: je.id,
       });
@@ -75,7 +92,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json(result, { status: 201 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Could not record receipt";
-    const status = 500;
-    return NextResponse.json({ error: message }, { status });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

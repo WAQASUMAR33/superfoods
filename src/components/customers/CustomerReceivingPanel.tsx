@@ -8,13 +8,10 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
-import MenuItem from "@mui/material/MenuItem";
 import Stack from "@mui/material/Stack";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import { formatCurrency } from "@/lib/utils";
-
-const METHODS = ["CASH", "BANK_TRANSFER", "CHEQUE"] as const;
 
 type Props = {
   customerId: number;
@@ -22,23 +19,33 @@ type Props = {
   ledgerBalanceDue: number;
 };
 
+function numericOnly(v: string) {
+  return v.replace(/[^0-9.]/g, "").replace(/(\..*)\./g, "$1");
+}
+
 export function CustomerReceivingPanel({ customerId, customerName, ledgerBalanceDue }: Props) {
   const router = useRouter();
-  const [amount, setAmount] = useState<string>("");
-  const [method, setMethod] = useState<(typeof METHODS)[number]>("CASH");
+  const [cashAmount, setCashAmount] = useState("");
+  const [chequeAmount, setChequeAmount] = useState("");
+  const [bankAmount, setBankAmount] = useState("");
   const [reference, setReference] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const cash = Number(cashAmount) || 0;
+  const cheque = Number(chequeAmount) || 0;
+  const bank = Number(bankAmount) || 0;
+  const totalReceiving = cash + cheque + bank;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setSuccess("");
-    const amt = Number(amount);
-    if (!Number.isFinite(amt) || amt <= 0) {
-      setError("Enter a valid receipt amount.");
+
+    if (totalReceiving <= 0) {
+      setError("Enter at least one payment amount.");
       return;
     }
 
@@ -48,8 +55,9 @@ export function CustomerReceivingPanel({ customerId, customerName, ledgerBalance
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          amount: amt,
-          method,
+          cashAmount: cash,
+          chequeAmount: cheque,
+          bankAmount: bank,
           reference: reference.trim() || undefined,
           notes: notes.trim() || undefined,
         }),
@@ -59,8 +67,10 @@ export function CustomerReceivingPanel({ customerId, customerName, ledgerBalance
         setError(typeof payload.error === "string" ? payload.error : "Receipt failed.");
         return;
       }
-      setSuccess(`Receipt of ${formatCurrency(amt)} recorded successfully (${payload.entryNo}).`);
-      setAmount("");
+      setSuccess(`Receipt of ${formatCurrency(totalReceiving)} recorded successfully (${payload.entryNo}).`);
+      setCashAmount("");
+      setChequeAmount("");
+      setBankAmount("");
       setReference("");
       setNotes("");
       router.refresh();
@@ -74,20 +84,28 @@ export function CustomerReceivingPanel({ customerId, customerName, ledgerBalance
   return (
     <Card component="form" onSubmit={(e) => void handleSubmit(e)}>
       <CardContent>
-        <Stack spacing={2}>
+        <Stack spacing={2.5}>
           <Typography variant="h6">Receive Payment</Typography>
           <Typography variant="body2" color="text.secondary">
-            Record a general payment received from <strong>{customerName}</strong>. This creates a journal entry
-            (DR Cash/Bank, CR Accounts Receivable) and updates the customer party ledger.
+            Record payment received from <strong>{customerName}</strong>. You can split across Cash, Cheque, and
+            Bank transfer. A journal entry and party ledger update will be created automatically.
           </Typography>
 
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
             <Box sx={{ px: 2, py: 1, bgcolor: ledgerBalanceDue > 0 ? "warning.50" : "success.50", borderRadius: 1, border: 1, borderColor: ledgerBalanceDue > 0 ? "warning.200" : "success.200" }}>
-              <Typography variant="caption" color="text.secondary">Current Balance Due</Typography>
+              <Typography variant="caption" color="text.secondary">Balance Due</Typography>
               <Typography variant="h6" sx={{ fontWeight: 700, color: ledgerBalanceDue > 0 ? "warning.main" : "success.main" }}>
                 {formatCurrency(ledgerBalanceDue)}
               </Typography>
             </Box>
+            {totalReceiving > 0 && (
+              <Box sx={{ px: 2, py: 1, bgcolor: "primary.50", borderRadius: 1, border: 1, borderColor: "primary.200" }}>
+                <Typography variant="caption" color="text.secondary">Total Receiving</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: "primary.main" }}>
+                  {formatCurrency(totalReceiving)}
+                </Typography>
+              </Box>
+            )}
           </Box>
 
           {error ? (
@@ -102,28 +120,44 @@ export function CustomerReceivingPanel({ customerId, customerName, ledgerBalance
             </Alert>
           ) : null}
 
+          <Typography variant="subtitle2" sx={{ fontWeight: 700, mt: 1 }}>
+            Payment Amounts
+          </Typography>
+
           <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
             <TextField
-              required
-              label="Amount"
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="Enter amount"
+              label="Cash"
+              type="text"
+              inputMode="decimal"
+              value={cashAmount}
+              onChange={(e) => setCashAmount(numericOnly(e.target.value))}
+              onFocus={(e) => { if (e.target.value === "0") setCashAmount(""); }}
+              placeholder="0.00"
               sx={{ flex: 1 }}
-              slotProps={{ htmlInput: { min: 0.01, step: 0.01 } }}
+              slotProps={{ htmlInput: { style: { fontVariantNumeric: "tabular-nums" } } }}
             />
             <TextField
-              select
-              label="Method"
-              value={method}
-              onChange={(e) => setMethod(e.target.value as (typeof METHODS)[number])}
-              sx={{ minWidth: 180 }}
-            >
-              <MenuItem value="CASH">Cash</MenuItem>
-              <MenuItem value="BANK_TRANSFER">Bank transfer</MenuItem>
-              <MenuItem value="CHEQUE">Cheque</MenuItem>
-            </TextField>
+              label="Cheque"
+              type="text"
+              inputMode="decimal"
+              value={chequeAmount}
+              onChange={(e) => setChequeAmount(numericOnly(e.target.value))}
+              onFocus={(e) => { if (e.target.value === "0") setChequeAmount(""); }}
+              placeholder="0.00"
+              sx={{ flex: 1 }}
+              slotProps={{ htmlInput: { style: { fontVariantNumeric: "tabular-nums" } } }}
+            />
+            <TextField
+              label="Bank Transfer"
+              type="text"
+              inputMode="decimal"
+              value={bankAmount}
+              onChange={(e) => setBankAmount(numericOnly(e.target.value))}
+              onFocus={(e) => { if (e.target.value === "0") setBankAmount(""); }}
+              placeholder="0.00"
+              sx={{ flex: 1 }}
+              slotProps={{ htmlInput: { style: { fontVariantNumeric: "tabular-nums" } } }}
+            />
           </Stack>
 
           <TextField
@@ -141,8 +175,8 @@ export function CustomerReceivingPanel({ customerId, customerName, ledgerBalance
                 Back to customer
               </Button>
             </Link>
-            <Button type="submit" variant="contained" disabled={saving}>
-              {saving ? "Saving…" : "Record Payment"}
+            <Button type="submit" variant="contained" disabled={saving || totalReceiving <= 0}>
+              {saving ? "Saving…" : `Record Payment${totalReceiving > 0 ? ` (${formatCurrency(totalReceiving)})` : ""}`}
             </Button>
           </Stack>
         </Stack>
