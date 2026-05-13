@@ -1,7 +1,9 @@
 export const dynamic = "force-dynamic";
 
 import { Suspense } from "react";
+import Link from "next/link";
 import Box from "@mui/material/Box";
+import Button from "@mui/material/Button";
 import Card from "@mui/material/Card";
 import Chip from "@mui/material/Chip";
 import Container from "@mui/material/Container";
@@ -13,6 +15,8 @@ import TableHead from "@mui/material/TableHead";
 import TableRow from "@mui/material/TableRow";
 import Typography from "@mui/material/Typography";
 import ShoppingCartIcon from "@mui/icons-material/ShoppingCart";
+import PaymentsIcon from "@mui/icons-material/Payments";
+import PointOfSaleIcon from "@mui/icons-material/PointOfSale";
 import LocalShippingIcon from "@mui/icons-material/LocalShipping";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 import InsightsIcon from "@mui/icons-material/Insights";
@@ -174,7 +178,14 @@ export default async function DashboardPage({
     <Box sx={{ display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0, flex: 1 }}>
       <Header title="Dashboard" />
 
-      <Box sx={{ flex: 1, overflow: "auto", py: { xs: 2, sm: 3 } }}>
+      <Box
+        sx={{
+          flex: 1,
+          overflow: "auto",
+          py: { xs: 2, sm: 3 },
+          pb: { xs: 11, md: 3 },
+        }}
+      >
         <Container maxWidth="xl" sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
           <Box
             sx={{
@@ -304,6 +315,51 @@ export default async function DashboardPage({
             )}
           </Paper>
         </Container>
+      </Box>
+
+      <Box
+        component="nav"
+        aria-label="Quick actions"
+        sx={{
+          display: { xs: "flex", md: "none" },
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: (t) => t.zIndex.appBar,
+          gap: 1.5,
+          px: 2,
+          pt: 1.5,
+          pb: (t) => `max(${t.spacing(2)}, env(safe-area-inset-bottom, 0px))`,
+          bgcolor: "background.paper",
+          borderTop: 1,
+          borderColor: "divider",
+          boxShadow: 6,
+        }}
+      >
+        <Button
+          component={Link}
+          href="/customers/receiving"
+          prefetch
+          variant="contained"
+          color="success"
+          size="large"
+          startIcon={<PaymentsIcon />}
+          sx={{ flex: 1, minWidth: 0 }}
+        >
+          Receive
+        </Button>
+        <Button
+          component={Link}
+          href="/pos"
+          prefetch
+          variant="contained"
+          size="large"
+          startIcon={<PointOfSaleIcon />}
+          sx={{ flex: 1, minWidth: 0 }}
+        >
+          POS
+        </Button>
       </Box>
     </Box>
   );
