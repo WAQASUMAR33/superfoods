@@ -4,12 +4,18 @@ import { useSession, signOut } from "next-auth/react";
 import { Bell, Menu, LogOut, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useSidebar } from "./SidebarContext";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   title: string;
+  /**
+   * When true (default), the bar is hidden below the `lg` breakpoint because the
+   * dashboard layout renders `DashboardMobileHeader` for small screens.
+   */
+  desktopOnly?: boolean;
 }
 
-export function Header({ title }: HeaderProps) {
+export function Header({ title, desktopOnly = true }: HeaderProps) {
   const { data: session } = useSession();
   const { toggle } = useSidebar();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -36,7 +42,12 @@ export function Header({ title }: HeaderProps) {
   const role = (session?.user as { role?: string })?.role ?? "";
 
   return (
-    <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-slate-100 bg-white px-4 sm:px-6">
+    <header
+      className={cn(
+        "flex h-14 flex-shrink-0 items-center justify-between border-b border-slate-100 bg-white px-4 sm:px-6",
+        desktopOnly && "hidden lg:flex"
+      )}
+    >
       <div className="flex items-center gap-3">
         {/* Mobile hamburger */}
         <button

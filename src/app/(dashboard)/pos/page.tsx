@@ -44,7 +44,7 @@ export default async function POSPage() {
   }));
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <POSTerminal products={productsPlain} customers={customersPlain} />
     </div>
   );
