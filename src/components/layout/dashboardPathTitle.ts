@@ -22,6 +22,7 @@ export function dashboardTitleFromPathname(pathname: string): string {
     [/^\/suppliers$/, "Suppliers"],
     [/^\/sales\/returns$/, "Sale returns"],
     [/^\/sales\/\d+\/return$/, "Sale return"],
+    [/^\/sales\/\d+\/edit$/, "Edit sale"],
     [/^\/sales\/\d+$/, "Sale"],
     [/^\/sales$/, "Sales history"],
     [/^\/customers\/receiving$/, "Customer receiving"],

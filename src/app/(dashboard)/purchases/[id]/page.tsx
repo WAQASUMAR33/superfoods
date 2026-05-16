@@ -266,7 +266,7 @@ export default async function PurchaseDetailPage({ params }: { params: Promise<{
                                 display: { xs: "none", sm: "table-cell" },
                               }}
                             >
-                              Cost / kg
+                              Rate
                             </TableCell>
                             <TableCell align="right" sx={{ fontWeight: 700, fontSize: 11, color: "text.secondary", py: 1.25 }}>
                               Amount
@@ -300,10 +300,7 @@ export default async function PurchaseDetailPage({ params }: { params: Promise<{
                                 </TableCell>
                                 <TableCell align="right" sx={{ py: 1.5, verticalAlign: "top", fontVariantNumeric: "tabular-nums" }}>
                                   <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                    {formatNumber(line.displayQty, 3)} {line.displayUnit}
-                                  </Typography>
-                                  <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                                    {formatNumber(line.quantityKg, 3)} kg
+                                    {formatNumber(line.displayQty, 3)}
                                   </Typography>
                                 </TableCell>
                                 <TableCell

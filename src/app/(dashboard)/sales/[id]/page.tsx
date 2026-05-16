@@ -95,6 +95,11 @@ export default async function SaleDetailPage({
           <Stack spacing={2.5}>
             <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5 }}>
               <SaleHistoryBackButton />
+              <Link href={`/sales/${sale.id}/edit`} prefetch style={{ textDecoration: "none" }}>
+                <Button component="span" size="small" variant="contained">
+                  Edit sale
+                </Button>
+              </Link>
               <Link href={`/sales/${sale.id}/return`} prefetch style={{ textDecoration: "none" }}>
                 <Button component="span" size="small" variant="outlined">
                   Sale return
@@ -260,7 +265,7 @@ export default async function SaleDetailPage({
                               display: { xs: "none", sm: "table-cell" },
                             }}
                           >
-                            / kg
+                            Rate
                           </TableCell>
                           <TableCell
                             align="right"
@@ -302,10 +307,7 @@ export default async function SaleDetailPage({
                               </TableCell>
                               <TableCell align="right" sx={{ py: 1.5, verticalAlign: "top", fontVariantNumeric: "tabular-nums" }}>
                                 <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                  {formatNumber(line.displayQty, 3)} {line.displayUnit}
-                                </Typography>
-                                <Typography variant="caption" color="text.secondary" sx={{ display: "block" }}>
-                                  {formatNumber(line.quantityKg, 3)} kg
+                                  {formatNumber(line.displayQty, 3)}
                                 </Typography>
                               </TableCell>
                               <TableCell
