@@ -25,6 +25,7 @@ import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined";
 
 import { Header } from "@/components/layout/Header";
 import { CustomerProfileLink, SaleHistoryBackButton } from "@/components/sales/SaleDetailNavClient";
+import { SaleDeleteButton } from "@/components/sales/SaleDeleteButton";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency, formatDateTime, formatNumber } from "@/lib/utils";
 
@@ -80,6 +81,7 @@ export default async function SaleDetailPage({
       customer: true,
       user: true,
       items: { include: { product: { include: { brand: true } } }, orderBy: { id: "asc" } },
+      _count: { select: { saleReturns: true } },
     },
   });
   if (!sale) notFound();
@@ -105,6 +107,11 @@ export default async function SaleDetailPage({
                   Sale return
                 </Button>
               </Link>
+              <SaleDeleteButton
+                saleId={sale.id}
+                invoiceNo={sale.invoiceNo}
+                returnCount={sale._count.saleReturns}
+              />
             </Box>
 
             <Paper

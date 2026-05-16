@@ -85,6 +85,34 @@ export async function supplierRunningBalanceInTx(tx: TxClient, supplierId: numbe
   return Number(s?.openingBalance ?? 0);
 }
 
+/** Recompute `runningBalance` on all customer ledger rows after deletes (ordered by id). */
+export async function rebuildCustomerPartyLedgerRunningBalances(tx: TxClient, customerId: number): Promise<void> {
+  const customer = await tx.customer.findUnique({
+    where: { id: customerId },
+    select: { openingBalance: true },
+  });
+  if (!customer) return;
+
+  const entries = await tx.partyLedgerEntry.findMany({
+    where: { customerId },
+    orderBy: { id: "asc" },
+    select: { id: true, type: true, amount: true, runningBalance: true },
+  });
+
+  let balance = Number(customer.openingBalance);
+  for (const entry of entries) {
+    const amount = Number(entry.amount);
+    balance += entry.type === "DEBIT" ? amount : -amount;
+    const stored = Number(entry.runningBalance);
+    if (Math.abs(stored - balance) > 0.005) {
+      await tx.partyLedgerEntry.update({
+        where: { id: entry.id },
+        data: { runningBalance: balance },
+      });
+    }
+  }
+}
+
 /** Current customer party balance (last ledger row or opening balance). */
 export async function customerRunningBalanceInTx(tx: TxClient, customerId: number): Promise<number> {
   const last = await tx.partyLedgerEntry.findFirst({

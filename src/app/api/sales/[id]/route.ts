@@ -4,6 +4,8 @@ import { getServerSession } from "next-auth";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
+import { deleteSaleWithDependencies } from "@/lib/deleteSale";
+import { interactiveTransactionOptions } from "@/lib/interactiveTransaction";
 import { prisma } from "@/lib/prisma";
 
 const PatchSaleSchema = z.object({
@@ -75,5 +77,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "That invoice number is already in use." }, { status: 409 });
     }
     throw e;
+  }
+}
+
+export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+  const { id } = await params;
+  const saleId = Number(id);
+  if (Number.isNaN(saleId)) return NextResponse.json({ error: "Invalid sale id" }, { status: 400 });
+
+  try {
+    await prisma.$transaction(async (tx) => {
+      await deleteSaleWithDependencies(tx, saleId);
+    }, interactiveTransactionOptions);
+
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Could not delete sale";
+    if (message === "NOT_FOUND") return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
