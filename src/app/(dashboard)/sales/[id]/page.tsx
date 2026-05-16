@@ -288,6 +288,8 @@ export default async function SaleDetailPage({
                         {sale.items.map((line) => {
                           const brand = line.product.brand?.name;
                           const title = brand ? `${line.product.name} · ${brand}` : line.product.name;
+                          const lineGross = Number(line.displayQty) * Number(line.unitPriceKg);
+                          const lineDiscountFlat = lineGross - Number(line.totalAmount);
                           return (
                             <TableRow
                               key={line.id}
@@ -329,7 +331,7 @@ export default async function SaleDetailPage({
                                   display: { xs: "none", md: "table-cell" },
                                 }}
                               >
-                                {formatNumber(line.discount, 2)}%
+                                {formatCurrency(Math.max(0, lineDiscountFlat))}
                               </TableCell>
                               <TableCell
                                 align="right"
